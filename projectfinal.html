@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LedgerDay — Daily P&L Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0b0c0e;
+    --bg2: #13141a;
+    --bg3: #1c1e27;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #e8e9f0;
+    --text2: #8a8d9e;
+    --text3: #555869;
+    --green: #2dd4a0;
+    --green-dim: rgba(45,212,160,0.14);
+    --green-mid: rgba(45,212,160,0.22);
+    --green-solid: #1a7a5e;
+    --red: #f05c6b;
+    --red-dim: rgba(240,92,107,0.14);
+    --red-mid: rgba(240,92,107,0.22);
+    --red-solid: #a8303b;
+    --accent: #7c6dfa;
+    --accent-dim: rgba(124,109,250,0.15);
+    --radius: 10px;
+    --radius-lg: 16px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.35);
+  }
+  html.light {
+    --bg: #f4f5f7;
+    --bg2: #ffffff;
+    --bg3: #eceef2;
+    --border: rgba(0,0,0,0.08);
+    --border2: rgba(0,0,0,0.14);
+    --text: #111318;
+    --text2: #4a4f63;
+    --text3: #9096aa;
+    --green: #0d7a58;
+    --green-dim: rgba(13,122,88,0.10);
+    --green-mid: rgba(13,122,88,0.18);
+    --green-solid: #0d7a58;
+    --red: #c8293a;
+    --red-dim: rgba(200,41,58,0.09);
+    --red-mid: rgba(200,41,58,0.17);
+    --red-solid: #c8293a;
+    --accent: #5b4de8;
+    --accent-dim: rgba(91,77,232,0.12);
+    --shadow: 0 2px 12px rgba(0,0,0,0.10);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; }
+  html, body { transition: background 0.25s, color 0.25s; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Sora', sans-serif;
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+  input, textarea, select, button { font-family: inherit; }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
+
+  #app { min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* AUTH */
+  #auth-screen {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    padding: 2rem;
+    background:
+      radial-gradient(ellipse 60% 50% at 70% 20%, rgba(124,109,250,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 20% 80%, rgba(45,212,160,0.06) 0%, transparent 60%),
+      var(--bg);
+  }
+  html.light #auth-screen {
+    background:
+      radial-gradient(ellipse 60% 50% at 70% 20%, rgba(91,77,232,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 20% 80%, rgba(13,122,88,0.05) 0%, transparent 60%),
+      var(--bg);
+  }
+  .auth-card {
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: var(--radius-lg); padding: 2.5rem 2.25rem;
+    width: 100%; max-width: 400px;
+  }
+  .auth-logo {
+    font-size: 13px; font-weight: 500; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--accent);
+    font-family: 'DM Mono', monospace; margin-bottom: 1.5rem;
+  }
+  .auth-title { font-size: 22px; font-weight: 600; margin-bottom: 0.35rem; }
+  .auth-sub { font-size: 14px; color: var(--text2); margin-bottom: 2rem; }
+  .field { margin-bottom: 1rem; }
+  .field label {
+    display: block; font-size: 12px; font-weight: 500; color: var(--text2);
+    margin-bottom: 6px; letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .field input {
+    width: 100%; background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 10px 14px; font-size: 14px;
+    color: var(--text); outline: none; transition: border-color 0.2s;
+  }
+  .field input:focus { border-color: var(--accent); }
+  .field input::placeholder { color: var(--text3); }
+  .btn-primary {
+    width: 100%; background: var(--accent); color: #fff; border: none;
+    border-radius: var(--radius); padding: 11px 20px; font-size: 14px;
+    font-weight: 500; cursor: pointer; transition: opacity 0.2s, transform 0.1s;
+    margin-top: 0.5rem;
+  }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-primary:active { transform: scale(0.99); }
+  .auth-switch {
+    text-align: center; margin-top: 1.25rem; font-size: 13px; color: var(--text2);
+  }
+  .auth-switch a { color: var(--accent); cursor: pointer; text-decoration: none; }
+  .auth-switch a:hover { text-decoration: underline; }
+  .auth-error {
+    background: var(--red-dim); border: 1px solid rgba(240,92,107,0.25);
+    color: var(--red); border-radius: var(--radius); padding: 10px 14px;
+    font-size: 13px; margin-bottom: 1rem; display: none;
+  }
+
+  /* MAIN APP */
+  #main-screen { flex: 1; display: none; flex-direction: column; }
+
+  /* TOPBAR */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2rem; height: 56px; border-bottom: 1px solid var(--border);
+    background: var(--bg); position: sticky; top: 0; z-index: 50;
+  }
+  .topbar-logo {
+    font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent);
+  }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .user-pill {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 999px; padding: 5px 12px 5px 6px;
+    font-size: 13px; color: var(--text2);
+  }
+  .user-avatar {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--accent-dim); border: 1px solid var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; color: var(--accent);
+  }
+  .btn-logout {
+    background: none; border: 1px solid var(--border); color: var(--text2);
+    border-radius: var(--radius); padding: 6px 12px; font-size: 12px;
+    cursor: pointer; transition: border-color 0.2s, color 0.2s;
+  }
+  .btn-logout:hover { border-color: var(--red); color: var(--red); }
+  .theme-toggle {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius); width: 34px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 17px; line-height: 1;
+    transition: border-color 0.2s, background 0.2s; flex-shrink: 0;
+  }
+  .theme-toggle:hover { border-color: var(--border2); }
+
+  /* CONTENT */
+  .content {
+    flex: 1; max-width: 860px; width: 100%;
+    margin: 0 auto; padding: 2rem 1.5rem 4rem;
+  }
+
+  /* CALENDAR HEADER */
+  .cal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;
+  }
+  .cal-nav { display: flex; align-items: center; gap: 12px; }
+  .nav-btn {
+    background: var(--bg3); border: 1px solid var(--border); color: var(--text2);
+    width: 34px; height: 34px; border-radius: var(--radius); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .nav-btn:hover { border-color: var(--border2); color: var(--text); }
+  .month-label { font-size: 18px; font-weight: 600; min-width: 200px; }
+  .cal-controls { display: flex; align-items: center; gap: 10px; }
+
+  /* CURRENCY SELECTOR */
+  .currency-wrap { position: relative; }
+  .currency-btn {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+    border-radius: var(--radius); padding: 7px 12px; font-size: 13px;
+    cursor: pointer; font-family: 'DM Mono', monospace; transition: border-color 0.2s;
+  }
+  .currency-btn:hover { border-color: var(--border2); }
+  .currency-dropdown {
+    position: absolute; top: calc(100% + 6px); right: 0;
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: var(--radius-lg); padding: 8px; min-width: 220px;
+    z-index: 100; display: none; box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+    max-height: 340px; overflow-y: auto;
+  }
+  .currency-dropdown.open { display: block; }
+  .currency-dropdown-title {
+    font-size: 11px; font-weight: 500; color: var(--text3);
+    letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 8px 8px;
+  }
+  .currency-option {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 10px; border-radius: 8px; cursor: pointer;
+    transition: background 0.15s; font-size: 13px;
+  }
+  .currency-option:hover { background: var(--bg3); }
+  .currency-option.active { background: var(--accent-dim); }
+  .currency-option-left { display: flex; align-items: center; gap: 10px; }
+  .currency-flag { font-size: 18px; line-height: 1; }
+  .currency-code { font-family: 'DM Mono', monospace; font-weight: 500; font-size: 13px; }
+  .currency-name { font-size: 12px; color: var(--text2); }
+  .currency-check { color: var(--accent); font-size: 14px; opacity: 0; }
+  .currency-option.active .currency-check { opacity: 1; }
+
+  /* SECONDARY PILLS */
+  .secondary-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.25rem; }
+  .sec-pill {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 999px; padding: 4px 12px 4px 8px;
+    font-size: 12px; color: var(--text2); cursor: pointer;
+    transition: border-color 0.2s; font-family: 'DM Mono', monospace;
+  }
+  .sec-pill:hover { border-color: var(--border2); }
+  .sec-pill.active { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); }
+  .sec-pill-flag { font-size: 14px; }
+  .add-currency-btn {
+    display: flex; align-items: center; gap: 4px;
+    background: none; border: 1px dashed var(--border2);
+    border-radius: 999px; padding: 4px 12px; font-size: 12px;
+    color: var(--text3); cursor: pointer; transition: border-color 0.2s, color 0.2s;
+  }
+  .add-currency-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* SUMMARY CARDS */
+  .summary-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 10px; margin-bottom: 1.5rem;
+  }
+  .stat-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 14px 16px;
+  }
+  .stat-label {
+    font-size: 11px; color: var(--text3); font-weight: 500;
+    letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px;
+  }
+  .stat-val { font-size: 19px; font-weight: 600; font-family: 'DM Mono', monospace; }
+  .stat-val.pos { color: var(--green); }
+  .stat-val.neg { color: var(--red); }
+  .stat-val.neu { color: var(--text); }
+  .stat-secondary { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; margin-top: 3px; }
+
+  /* DOW HEADER */
+  .dow-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 4px; margin-bottom: 4px;
+  }
+  .dow {
+    text-align: center; font-size: 11px; color: var(--text3);
+    font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 0;
+  }
+
+  /* DAY GRID */
+  .day-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .day {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); min-height: 80px; padding: 8px 9px;
+    cursor: pointer; position: relative; overflow: hidden;
+    transition: border-color 0.18s, background 0.18s;
+  }
+  .day:hover { border-color: var(--border2); background: var(--bg3); }
+  .day.empty { cursor: default; border-color: transparent; background: transparent; }
+  .day.today { border-color: var(--accent) !important; }
+  .day.has-profit { background: var(--green-dim) !important; border-color: rgba(45,212,160,0.35); }
+  .day.has-profit:hover { background: var(--green-mid) !important; }
+  .day.has-loss { background: var(--red-dim) !important; border-color: rgba(240,92,107,0.35); }
+  .day.has-loss:hover { background: var(--red-mid) !important; }
+  html.light .day.has-profit { border-color: rgba(13,122,88,0.4); }
+  html.light .day.has-loss { border-color: rgba(200,41,58,0.4); }
+  .day-num {
+    font-size: 12px; font-weight: 500; color: var(--text3); position: relative; z-index: 1;
+  }
+  .day.today .day-num {
+    color: var(--accent); background: var(--accent-dim);
+    width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; font-size: 11px;
+  }
+  .day-primary {
+    font-size: 13px; font-weight: 600; font-family: 'DM Mono', monospace;
+    margin-top: 5px; position: relative; z-index: 1; line-height: 1.2;
+  }
+  .day-primary.pos { color: var(--green); }
+  .day-primary.neg { color: var(--red); }
+  .day-secondary {
+    font-size: 10px; font-family: 'DM Mono', monospace; color: var(--text3);
+    margin-top: 2px; position: relative; z-index: 1; line-height: 1.4;
+  }
+  .day-note {
+    font-size: 10px; color: var(--text3); margin-top: 3px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    position: relative; z-index: 1;
+  }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center;
+    z-index: 200; padding: 1rem; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: var(--radius-lg); padding: 1.75rem; width: 100%; max-width: 420px;
+    transform: translateY(8px); transition: transform 0.2s;
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-title { font-size: 15px; font-weight: 600; margin-bottom: 1.25rem; color: var(--text); }
+  .modal-date-badge {
+    display: inline-block; background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 999px; padding: 3px 12px; font-size: 12px;
+    font-family: 'DM Mono', monospace; color: var(--text2); margin-bottom: 1.25rem;
+  }
+  .sign-row { display: flex; gap: 8px; margin-bottom: 1rem; }
+  .sign-btn {
+    flex: 1; padding: 9px; border-radius: var(--radius); border: 1px solid var(--border);
+    background: none; font-size: 13px; font-weight: 500; cursor: pointer;
+    transition: all 0.15s; color: var(--text2);
+  }
+  .sign-btn.active-pos { background: var(--green-mid); border-color: var(--green); color: var(--green); }
+  .sign-btn.active-neg { background: var(--red-mid); border-color: var(--red); color: var(--red); }
+  .modal-field { margin-bottom: 1rem; }
+  .modal-field label {
+    display: block; font-size: 11px; font-weight: 500; color: var(--text3);
+    letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px;
+  }
+  .modal-input-wrap { position: relative; }
+  .modal-currency-prefix {
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    font-family: 'DM Mono', monospace; font-size: 14px; color: var(--text3);
+    pointer-events: none;
+  }
+  .modal-input {
+    width: 100%; background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 10px 14px 10px 32px;
+    font-size: 15px; font-family: 'DM Mono', monospace; color: var(--text);
+    outline: none; transition: border-color 0.2s;
+  }
+  .modal-input:focus { border-color: var(--accent); }
+  .modal-input::placeholder { color: var(--text3); }
+  .modal-textarea {
+    width: 100%; background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 10px 14px; font-size: 13px;
+    color: var(--text); outline: none; resize: vertical; min-height: 70px;
+    font-family: 'Sora', sans-serif; transition: border-color 0.2s;
+  }
+  .modal-textarea:focus { border-color: var(--accent); }
+  .modal-textarea::placeholder { color: var(--text3); }
+  .modal-btns { display: flex; gap: 8px; align-items: center; margin-top: 1.25rem; }
+  .btn-save {
+    flex: 1; background: var(--accent); color: #fff; border: none;
+    border-radius: var(--radius); padding: 10px; font-size: 14px;
+    font-weight: 500; cursor: pointer; transition: opacity 0.2s;
+  }
+  .btn-save:hover { opacity: 0.85; }
+  .btn-cancel-modal {
+    background: none; border: 1px solid var(--border); color: var(--text2);
+    border-radius: var(--radius); padding: 10px 16px; font-size: 13px;
+    cursor: pointer; transition: border-color 0.2s;
+  }
+  .btn-cancel-modal:hover { border-color: var(--border2); }
+  .btn-delete {
+    background: none; border: none; color: var(--red); font-size: 12px;
+    cursor: pointer; padding: 4px 0; opacity: 0.7; transition: opacity 0.2s;
+  }
+  .btn-delete:hover { opacity: 1; }
+  .modal-secondary-preview {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 10px 14px; margin-bottom: 1rem;
+  }
+  .modal-secondary-preview-label {
+    font-size: 11px; color: var(--text3); margin-bottom: 6px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .modal-secondary-list { display: flex; flex-direction: column; gap: 4px; }
+  .modal-secondary-item {
+    display: flex; justify-content: space-between;
+    font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text2);
+  }
+  .modal-secondary-item span:first-child { color: var(--text3); font-size: 12px; }
+
+  /* SECONDARY CURRENCY PANEL */
+  .secondary-panel {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem; display: none;
+  }
+  .secondary-panel.visible { display: block; }
+  .secondary-panel-title {
+    font-size: 11px; color: var(--text3); text-transform: uppercase;
+    letter-spacing: 0.06em; margin-bottom: 10px;
+  }
+  .secondary-panel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+  .secondary-toggle-item {
+    display: flex; align-items: center; gap: 8px; padding: 7px 10px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    cursor: pointer; font-size: 12px; transition: all 0.15s; color: var(--text2);
+  }
+  .secondary-toggle-item:hover { border-color: var(--border2); }
+  .secondary-toggle-item.active { border-color: var(--accent); background: var(--accent-dim); color: var(--text); }
+  .secondary-toggle-item .sti-check { margin-left: auto; font-size: 11px; color: var(--accent); opacity: 0; }
+  .secondary-toggle-item.active .sti-check { opacity: 1; }
+  .fx-note { font-size: 11px; color: var(--text3); margin-top: 0.5rem; font-style: italic; }
+
+  @media (max-width: 640px) {
+    .summary-grid { grid-template-columns: repeat(2, 1fr); }
+    .content { padding: 1.25rem 1rem 3rem; }
+    .topbar { padding: 0 1rem; }
+    .month-label { font-size: 15px; min-width: 0; }
+    .day { min-height: 60px; padding: 5px 6px; }
+    .day-primary { font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- AUTH SCREEN -->
+  <div id="auth-screen">
+    <div class="auth-card">
+      <div class="auth-logo">LedgerDay</div>
+      <div id="auth-login">
+        <div class="auth-title">Welcome back</div>
+        <div class="auth-sub">Track every dollar made and lost.</div>
+        <div class="auth-error" id="login-error"></div>
+        <div class="field"><label>Email</label><input type="email" id="login-email" placeholder="you@email.com" autocomplete="email" /></div>
+        <div class="field"><label>Password</label><input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" /></div>
+        <button class="btn-primary" id="btn-login">Sign In</button>
+        <div class="auth-switch">Don't have an account? <a id="link-to-register">Create one</a></div>
+      </div>
+      <div id="auth-register" style="display:none">
+        <div class="auth-title">Create account</div>
+        <div class="auth-sub">Your P&L data saves securely to your account.</div>
+        <div class="auth-error" id="register-error"></div>
+        <div class="field"><label>Name</label><input type="text" id="reg-name" placeholder="Alex Johnson" autocomplete="name" /></div>
+        <div class="field"><label>Email</label><input type="email" id="reg-email" placeholder="you@email.com" autocomplete="email" /></div>
+        <div class="field"><label>Password</label><input type="password" id="reg-password" placeholder="At least 6 characters" autocomplete="new-password" /></div>
+        <button class="btn-primary" id="btn-register">Create Account</button>
+        <div class="auth-switch">Already have an account? <a id="link-to-login">Sign in</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="main-screen">
+    <div class="topbar">
+      <div class="topbar-logo">LedgerDay</div>
+      <div class="topbar-right">
+        <button class="theme-toggle" id="theme-toggle" title="Toggle light/dark mode">🌙</button>
+        <div class="user-pill">
+          <div class="user-avatar" id="user-avatar">?</div>
+          <span id="user-name-display">—</span>
+        </div>
+        <button class="btn-logout" id="btn-logout">Sign out</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="cal-header">
+        <div class="cal-nav">
+          <button class="nav-btn" id="btn-prev">&#8249;</button>
+          <div class="month-label" id="month-label"></div>
+          <button class="nav-btn" id="btn-next">&#8250;</button>
+        </div>
+        <div class="cal-controls">
+          <div class="currency-wrap">
+            <button class="currency-btn" id="currency-btn">
+              <span id="main-currency-flag">🇺🇸</span>
+              <span id="main-currency-code">USD</span>
+              <span style="color:var(--text3);font-size:12px">▾</span>
+            </button>
+            <div class="currency-dropdown" id="currency-dropdown">
+              <div class="currency-dropdown-title">Primary currency</div>
+              <div id="primary-currency-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:1rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;">Also show in</div>
+          <button id="btn-collapse-secondary" title="Collapse currency display" style="display:none;background:none;border:none;cursor:pointer;font-size:11px;color:var(--text3);padding:2px 6px;border-radius:6px;transition:color 0.2s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text3)'">Hide ▲</button>
+        </div>
+        <div id="secondary-collapsed-bar" style="display:none;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;"></div>
+        <div class="secondary-pills" id="secondary-pills">
+          <button class="add-currency-btn" id="btn-add-currency">+ Add currency</button>
+        </div>
+      </div>
+
+      <div class="secondary-panel" id="secondary-panel">
+        <div class="secondary-panel-title" id="secondary-panel-title">Select currencies to display alongside USD</div>
+        <div class="secondary-panel-grid" id="secondary-panel-grid"></div>
+        <div class="fx-note">* Exchange rates are approximate and updated periodically.</div>
+      </div>
+
+      <div class="summary-grid">
+        <div class="stat-card">
+          <div class="stat-label">Monthly P&L</div>
+          <div class="stat-val neu" id="s-total">$0</div>
+          <div class="stat-secondary" id="s-total-sec"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Best day</div>
+          <div class="stat-val pos" id="s-best">—</div>
+          <div class="stat-secondary" id="s-best-sec"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Worst day</div>
+          <div class="stat-val neg" id="s-worst">—</div>
+          <div class="stat-secondary" id="s-worst-sec"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Win days</div>
+          <div class="stat-val neu" id="s-wins">—</div>
+          <div class="stat-secondary" id="s-wins-sec"></div>
+        </div>
+      </div>
+
+      <div class="dow-grid">
+        <div class="dow">Sun</div><div class="dow">Mon</div><div class="dow">Tue</div>
+        <div class="dow">Wed</div><div class="dow">Thu</div><div class="dow">Fri</div><div class="dow">Sat</div>
+      </div>
+      <div class="day-grid" id="day-grid"></div>
+    </div>
+  </div>
+
+  <!-- Entry Modal -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <div class="modal-date-badge" id="modal-date-badge"></div>
+      <div class="sign-row">
+        <button class="sign-btn active-pos" id="btn-pos">▲ Profit</button>
+        <button class="sign-btn" id="btn-neg">▼ Loss</button>
+      </div>
+      <div class="modal-field">
+        <label>Amount</label>
+        <div class="modal-input-wrap">
+          <span class="modal-currency-prefix" id="modal-prefix">$</span>
+          <input class="modal-input" type="number" id="modal-amount" placeholder="0.00" min="0" step="0.01" />
+        </div>
+      </div>
+      <div class="modal-secondary-preview" id="modal-secondary-preview" style="display:none">
+        <div class="modal-secondary-preview-label">Equivalent in</div>
+        <div class="modal-secondary-list" id="modal-secondary-list"></div>
+      </div>
+      <div class="modal-field">
+        <label>Note (optional)</label>
+        <textarea class="modal-textarea" id="modal-note" placeholder="e.g. AAPL calls, crypto swing trade…"></textarea>
+      </div>
+      <div class="modal-btns">
+        <button class="btn-delete" id="btn-delete" style="display:none">🗑 Delete</button>
+        <button class="btn-cancel-modal" id="btn-cancel-modal">Cancel</button>
+        <button class="btn-save" id="btn-save">Save</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer style="text-align:center;padding:1.5rem 1rem 2rem;border-top:1px solid var(--border);margin-top:auto;">
+  <a href="https://www.patreon.com/ginmoon" target="_blank" rel="noopener noreferrer"
+     style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:var(--text2);font-size:13px;font-family:'Sora',sans-serif;transition:color 0.2s;"
+     onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">
+    <span style="font-size:16px">☕</span>
+    <span>buy me a coffee — anything helps</span>
+    <span style="font-size:11px;font-family:'DM Mono',monospace;opacity:0.5">patreon.com/ginmoon ↗</span>
+  </a>
+</footer>
+
+<script>
+/* ══════════════════════════════════════════
+   CURRENCY DATA
+══════════════════════════════════════════ */
+const CURRENCIES = [
+  { code: 'USD', flag: '🇺🇸', name: 'US Dollar',        symbol: '$',   rate: 1 },
+  { code: 'EUR', flag: '🇪🇺', name: 'Euro',              symbol: '€',   rate: 0.92 },
+  { code: 'GBP', flag: '🇬🇧', name: 'British Pound',     symbol: '£',   rate: 0.79 },
+  { code: 'JPY', flag: '🇯🇵', name: 'Japanese Yen',      symbol: '¥',   rate: 149.5 },
+  { code: 'CAD', flag: '🇨🇦', name: 'Canadian Dollar',   symbol: 'C$',  rate: 1.36 },
+  { code: 'AUD', flag: '🇦🇺', name: 'Australian Dollar', symbol: 'A$',  rate: 1.53 },
+  { code: 'CHF', flag: '🇨🇭', name: 'Swiss Franc',       symbol: 'Fr',  rate: 0.90 },
+  { code: 'CNY', flag: '🇨🇳', name: 'Chinese Yuan',      symbol: '¥',   rate: 7.24 },
+  { code: 'INR', flag: '🇮🇳', name: 'Indian Rupee',      symbol: '₹',   rate: 83.1 },
+  { code: 'KRW', flag: '🇰🇷', name: 'Korean Won',        symbol: '₩',   rate: 1325 },
+  { code: 'MXN', flag: '🇲🇽', name: 'Mexican Peso',      symbol: '$',   rate: 17.2 },
+  { code: 'BRL', flag: '🇧🇷', name: 'Brazilian Real',    symbol: 'R$',  rate: 4.97 },
+  { code: 'SGD', flag: '🇸🇬', name: 'Singapore Dollar',  symbol: 'S$',  rate: 1.34 },
+  { code: 'HKD', flag: '🇭🇰', name: 'Hong Kong Dollar',  symbol: 'HK$', rate: 7.82 },
+  { code: 'NOK', flag: '🇳🇴', name: 'Norwegian Krone',   symbol: 'kr',  rate: 10.6 },
+];
+
+/* ══════════════════════════════════════════
+   STATE
+══════════════════════════════════════════ */
+const state = {
+  currentUser: null,
+  users: {},
+  viewYear: new Date().getFullYear(),
+  viewMonth: new Date().getMonth(),
+  primaryCurrency: 'USD',
+  secondaryCurrencies: [],
+  modalDate: null,
+  modalSign: 1,
+  theme: 'dark',
+  secondaryCollapsed: false,
+};
+
+/* ══════════════════════════════════════════
+   PERSISTENCE
+══════════════════════════════════════════ */
+function persist() {
+  try {
+    localStorage.setItem('ld_users', JSON.stringify(state.users));
+    localStorage.setItem('ld_session', JSON.stringify({
+      email: state.currentUser ? state.currentUser.email : null,
+      primaryCurrency: state.primaryCurrency,
+      secondaryCurrencies: state.secondaryCurrencies,
+      theme: state.theme,
+    }));
+  } catch(e) {}
+}
+
+function loadPersisted() {
+  try {
+    const u = localStorage.getItem('ld_users');
+    if (u) state.users = JSON.parse(u);
+    const s = localStorage.getItem('ld_session');
+    if (s) {
+      const sess = JSON.parse(s);
+      state.primaryCurrency = sess.primaryCurrency || 'USD';
+      state.secondaryCurrencies = sess.secondaryCurrencies || [];
+      state.theme = sess.theme || 'dark';
+      if (sess.email && state.users[sess.email]) {
+        state.currentUser = { email: sess.email, name: state.users[sess.email].name };
+      }
+    }
+  } catch(e) {}
+}
+
+/* ══════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════ */
+function getEntries() {
+  if (!state.currentUser) return {};
+  return state.users[state.currentUser.email]?.entries || {};
+}
+
+function dateKey(y, m, d) {
+  return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+}
+
+function getCurrency(code) {
+  return CURRENCIES.find(c => c.code === code) || CURRENCIES[0];
+}
+
+function formatAmount(usdAmount, currencyCode) {
+  const cur = getCurrency(currencyCode);
+  const converted = Math.abs(usdAmount) * cur.rate;
+  const sign = usdAmount >= 0 ? '+' : '-';
+  if (currencyCode === 'JPY' || currencyCode === 'KRW') {
+    return `${sign}${cur.symbol}${Math.round(converted).toLocaleString()}`;
+  }
+  return `${sign}${cur.symbol}${converted.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+}
+
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function hideError(id) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = 'none';
+}
+
+function initials(name) {
+  if (!name) return '?';
+  return name.trim().split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0,2);
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ══════════════════════════════════════════
+   THEME
+══════════════════════════════════════════ */
+function applyTheme() {
+  if (state.theme === 'light') {
+    document.documentElement.classList.add('light');
+    document.getElementById('theme-toggle').textContent = '☀️';
+  } else {
+    document.documentElement.classList.remove('light');
+    document.getElementById('theme-toggle').textContent = '🌙';
+  }
+}
+
+function toggleTheme() {
+  state.theme = state.theme === 'dark' ? 'light' : 'dark';
+  applyTheme();
+  persist();
+}
+
+/* ══════════════════════════════════════════
+   AUTH
+══════════════════════════════════════════ */
+function showLogin() {
+  document.getElementById('auth-login').style.display = '';
+  document.getElementById('auth-register').style.display = 'none';
+  hideError('login-error');
+  hideError('register-error');
+}
+
+function showRegister() {
+  document.getElementById('auth-login').style.display = 'none';
+  document.getElementById('auth-register').style.display = '';
+  hideError('login-error');
+  hideError('register-error');
+}
+
+function doLogin() {
+  hideError('login-error');
+  const email    = document.getElementById('login-email').value.trim().toLowerCase();
+  const password = document.getElementById('login-password').value;
+  if (!email)    { showError('login-error', 'Please enter your email.'); return; }
+  if (!password) { showError('login-error', 'Please enter your password.'); return; }
+  const user = state.users[email];
+  if (!user) { showError('login-error', 'No account found with that email. Create one below.'); return; }
+  if (user.password !== password) { showError('login-error', 'Incorrect password. Please try again.'); return; }
+  state.currentUser = { email, name: user.name };
+  persist();
+  enterApp();
+}
+
+function doRegister() {
+  hideError('register-error');
+  const name     = document.getElementById('reg-name').value.trim();
+  const email    = document.getElementById('reg-email').value.trim().toLowerCase();
+  const password = document.getElementById('reg-password').value;
+  if (!name)  { showError('register-error', 'Please enter your name.'); return; }
+  if (!email || !email.includes('@') || !email.includes('.')) {
+    showError('register-error', 'Please enter a valid email address.'); return;
+  }
+  if (password.length < 6) { showError('register-error', 'Password must be at least 6 characters.'); return; }
+  if (state.users[email])  { showError('register-error', 'An account with this email already exists. Try signing in.'); return; }
+  state.users[email] = { name, password, entries: {} };
+  state.currentUser = { email, name };
+  persist();
+  enterApp();
+}
+
+function doLogout() {
+  state.currentUser = null;
+  persist();
+  ['login-email','login-password','reg-name','reg-email','reg-password'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('main-screen').style.display = 'none';
+  document.getElementById('auth-screen').style.display = '';
+  showLogin();
+}
+
+function enterApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('main-screen').style.display = 'flex';
+  document.getElementById('user-name-display').textContent = state.currentUser.name;
+  document.getElementById('user-avatar').textContent = initials(state.currentUser.name);
+  applyTheme();
+  buildCurrencyUI();
+  renderCalendar();
+}
+
+/* ══════════════════════════════════════════
+   CALENDAR
+══════════════════════════════════════════ */
+function changeMonth(delta) {
+  state.viewMonth += delta;
+  if (state.viewMonth > 11) { state.viewMonth = 0; state.viewYear++; }
+  if (state.viewMonth < 0)  { state.viewMonth = 11; state.viewYear--; }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const { viewYear: y, viewMonth: m } = state;
+  const entries = getEntries();
+  const label = new Date(y, m, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  document.getElementById('month-label').textContent = label;
+
+  const today    = new Date();
+  const firstDay = new Date(y, m, 1).getDay();
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  let html = '';
+
+  for (let i = 0; i < firstDay; i++) html += '<div class="day empty"></div>';
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const key   = dateKey(y, m, d);
+    const entry = entries[key];
+    const isToday = (today.getFullYear()===y && today.getMonth()===m && today.getDate()===d);
+
+    let cls = 'day';
+    if (isToday) cls += ' today';
+    if (entry) cls += entry.amount >= 0 ? ' has-profit' : ' has-loss';
+
+    let inner = `<div class="day-num">${d}</div>`;
+    if (entry) {
+      const amtCls = entry.amount >= 0 ? 'pos' : 'neg';
+      inner += `<div class="day-primary ${amtCls}">${formatAmount(entry.amount, state.primaryCurrency)}</div>`;
+      if (state.secondaryCurrencies.length) {
+        inner += `<div class="day-secondary">${state.secondaryCurrencies.map(c => `<div>${formatAmount(entry.amount,c)}</div>`).join('')}</div>`;
+      }
+      if (entry.note) inner += `<div class="day-note">${escHtml(entry.note)}</div>`;
+    }
+    html += `<div class="${cls}" data-date="${key}">${inner}</div>`;
+  }
+
+  document.getElementById('day-grid').innerHTML = html;
+
+  // Attach click listeners
+  document.querySelectorAll('.day:not(.empty)').forEach(el => {
+    el.addEventListener('click', () => openModal(el.dataset.date));
+  });
+
+  updateSummary();
+}
+
+/* ══════════════════════════════════════════
+   SUMMARY
+══════════════════════════════════════════ */
+function updateSummary() {
+  const entries = getEntries();
+  const { viewYear: y, viewMonth: m } = state;
+  const prefix = `${y}-${String(m+1).padStart(2,'0')}-`;
+  const monthAmounts = Object.entries(entries)
+    .filter(([k]) => k.startsWith(prefix))
+    .map(([,v]) => v.amount);
+
+  const total = monthAmounts.reduce((a,b) => a+b, 0);
+  const best  = monthAmounts.length ? Math.max(...monthAmounts) : null;
+  const worst = monthAmounts.length ? Math.min(...monthAmounts) : null;
+  const wins  = monthAmounts.filter(a => a > 0).length;
+  const n     = monthAmounts.length;
+
+  const totalEl = document.getElementById('s-total');
+  totalEl.textContent = n ? formatAmount(total, state.primaryCurrency) : '$0';
+  totalEl.className = 'stat-val ' + (total > 0 ? 'pos' : total < 0 ? 'neg' : 'neu');
+
+  document.getElementById('s-best').textContent  = best  !== null ? formatAmount(best,  state.primaryCurrency) : '—';
+  document.getElementById('s-worst').textContent = worst !== null ? formatAmount(worst, state.primaryCurrency) : '—';
+  document.getElementById('s-wins').textContent  = n ? `${wins} / ${n}` : '—';
+
+  const secFmt = (val) => val !== null && state.secondaryCurrencies.length
+    ? state.secondaryCurrencies.map(c => formatAmount(val,c)).join(' · ') : '';
+
+  document.getElementById('s-total-sec').textContent = n ? secFmt(total) : '';
+  document.getElementById('s-best-sec').textContent  = secFmt(best);
+  document.getElementById('s-worst-sec').textContent = secFmt(worst);
+  document.getElementById('s-wins-sec').textContent  = n ? `${Math.round((wins/n)*100)}% win rate` : '';
+}
+
+/* ══════════════════════════════════════════
+   MODAL
+══════════════════════════════════════════ */
+function openModal(dateStr) {
+  state.modalDate = dateStr;
+  const entry = getEntries()[dateStr];
+  const [y,mo,d] = dateStr.split('-').map(Number);
+  document.getElementById('modal-date-badge').textContent =
+    new Date(y, mo-1, d).toLocaleDateString('en-US', { weekday:'short', month:'long', day:'numeric', year:'numeric' });
+
+  if (entry) {
+    state.modalSign = entry.amount >= 0 ? 1 : -1;
+    document.getElementById('modal-amount').value = Math.abs(entry.amount);
+    document.getElementById('modal-note').value = entry.note || '';
+    document.getElementById('btn-delete').style.display = '';
+  } else {
+    state.modalSign = 1;
+    document.getElementById('modal-amount').value = '';
+    document.getElementById('modal-note').value = '';
+    document.getElementById('btn-delete').style.display = 'none';
+  }
+
+  setSign(state.modalSign);
+  updateModalSecondary();
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('modal-amount').focus(), 150);
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  state.modalDate = null;
+}
+
+function setSign(sign) {
+  state.modalSign = sign;
+  document.getElementById('btn-pos').className = 'sign-btn' + (sign===1 ? ' active-pos' : '');
+  document.getElementById('btn-neg').className = 'sign-btn' + (sign===-1 ? ' active-neg' : '');
+}
+
+function updateModalSecondary() {
+  const raw = parseFloat(document.getElementById('modal-amount').value) || 0;
+  const usd = raw * state.modalSign;
+  const preview = document.getElementById('modal-secondary-preview');
+  if (!state.secondaryCurrencies.length || raw === 0) { preview.style.display = 'none'; return; }
+  preview.style.display = '';
+  document.getElementById('modal-secondary-list').innerHTML =
+    state.secondaryCurrencies.map(code => {
+      const cur = getCurrency(code);
+      return `<div class="modal-secondary-item"><span>${cur.flag} ${code}</span><span>${formatAmount(usd,code)}</span></div>`;
+    }).join('');
+}
+
+function saveEntry() {
+  const raw = parseFloat(document.getElementById('modal-amount').value);
+  if (isNaN(raw) || raw < 0) {
+    const inp = document.getElementById('modal-amount');
+    inp.style.borderColor = 'var(--red)';
+    setTimeout(() => inp.style.borderColor = '', 1200);
+    return;
+  }
+  const email = state.currentUser.email;
+  if (!state.users[email].entries) state.users[email].entries = {};
+  state.users[email].entries[state.modalDate] = {
+    amount: raw * state.modalSign,
+    note: document.getElementById('modal-note').value.trim(),
+  };
+  persist();
+  closeModal();
+  renderCalendar();
+}
+
+function deleteEntry() {
+  if (!state.modalDate || !state.currentUser) return;
+  delete state.users[state.currentUser.email].entries[state.modalDate];
+  persist();
+  closeModal();
+  renderCalendar();
+}
+
+/* ══════════════════════════════════════════
+   CURRENCY UI
+══════════════════════════════════════════ */
+function buildCurrencyUI() {
+  buildPrimaryList();
+  buildSecondaryPanel();
+  buildSecondaryPills();
+  updatePrimaryButton();
+}
+
+function updatePrimaryButton() {
+  const cur = getCurrency(state.primaryCurrency);
+  document.getElementById('main-currency-flag').textContent = cur.flag;
+  document.getElementById('main-currency-code').textContent = cur.code;
+  document.getElementById('modal-prefix').textContent = cur.symbol;
+  document.getElementById('secondary-panel-title').textContent =
+    `Select currencies to display alongside ${cur.code}`;
+}
+
+function buildPrimaryList() {
+  document.getElementById('primary-currency-list').innerHTML = CURRENCIES.map(cur => `
+    <div class="currency-option ${cur.code === state.primaryCurrency ? 'active' : ''}" data-code="${cur.code}">
+      <div class="currency-option-left">
+        <span class="currency-flag">${cur.flag}</span>
+        <div><div class="currency-code">${cur.code}</div><div class="currency-name">${cur.name}</div></div>
+      </div>
+      <span class="currency-check">✓</span>
+    </div>`).join('');
+
+  document.querySelectorAll('.currency-option').forEach(el => {
+    el.addEventListener('click', () => selectPrimary(el.dataset.code));
+  });
+}
+
+function selectPrimary(code) {
+  state.secondaryCurrencies = state.secondaryCurrencies.filter(c => c !== code);
+  state.primaryCurrency = code;
+  persist();
+  document.getElementById('currency-dropdown').classList.remove('open');
+  buildCurrencyUI();
+  renderCalendar();
+}
+
+function buildSecondaryPanel() {
+  const available = CURRENCIES.filter(c => c.code !== state.primaryCurrency);
+  document.getElementById('secondary-panel-grid').innerHTML = available.map(cur => {
+    const active = state.secondaryCurrencies.includes(cur.code);
+    return `<div class="secondary-toggle-item ${active ? 'active' : ''}" data-code="${cur.code}">
+      <span>${cur.flag}</span>
+      <span class="currency-code">${cur.code}</span>
+      <span style="font-size:11px;color:var(--text3);flex:1">${cur.name}</span>
+      <span class="sti-check">✓</span>
+    </div>`;
+  }).join('');
+
+  document.querySelectorAll('.secondary-toggle-item').forEach(el => {
+    el.addEventListener('click', () => toggleSecondary(el.dataset.code));
+  });
+}
+
+function toggleSecondary(code) {
+  const idx = state.secondaryCurrencies.indexOf(code);
+  if (idx >= 0) {
+    state.secondaryCurrencies.splice(idx, 1);
+  } else {
+    if (state.secondaryCurrencies.length >= 4) state.secondaryCurrencies.shift();
+    state.secondaryCurrencies.push(code);
+  }
+  persist();
+  buildSecondaryPanel();
+  buildSecondaryPills();
+  renderCalendar();
+}
+
+function buildSecondaryPills() {
+  const hasSecs = state.secondaryCurrencies.length > 0;
+  const collapseBtn = document.getElementById('btn-collapse-secondary');
+  const pillsRow    = document.getElementById('secondary-pills');
+  const collapsedBar = document.getElementById('secondary-collapsed-bar');
+
+  // Show/hide the collapse button only when there are active currencies
+  collapseBtn.style.display = hasSecs ? '' : 'none';
+
+  if (state.secondaryCollapsed && hasSecs) {
+    // COLLAPSED state — show compact bar, hide pills row
+    pillsRow.style.display = 'none';
+    collapsedBar.style.display = 'flex';
+    collapsedBar.innerHTML = state.secondaryCurrencies.map(code => {
+      const cur = getCurrency(code);
+      return `<span style="font-size:12px;color:var(--text2);font-family:'DM Mono',monospace;background:var(--bg3);border:1px solid var(--border);border-radius:999px;padding:3px 10px;">${cur.flag} ${cur.code}</span>`;
+    }).join('');
+    collapseBtn.textContent = 'Show ▼';
+  } else {
+    // EXPANDED state — show pills row, hide compact bar
+    state.secondaryCollapsed = false;
+    pillsRow.style.display = '';
+    collapsedBar.style.display = 'none';
+    collapseBtn.textContent = 'Hide ▲';
+
+    const addBtn = '<button class="add-currency-btn" id="btn-add-currency">+ Add currency</button>';
+    pillsRow.innerHTML = state.secondaryCurrencies.map(code => {
+      const cur = getCurrency(code);
+      return `<span class="sec-pill active" data-code="${code}">
+        <span class="sec-pill-flag">${cur.flag}</span>${cur.code}
+        <span style="opacity:0.5;margin-left:2px">×</span>
+      </span>`;
+    }).join('') + addBtn;
+
+    document.querySelectorAll('.sec-pill').forEach(el => {
+      el.addEventListener('click', () => toggleSecondary(el.dataset.code));
+    });
+    document.getElementById('btn-add-currency').addEventListener('click', toggleSecondaryPanel);
+  }
+
+  // Always re-wire collapse button
+  collapseBtn.onclick = () => {
+    state.secondaryCollapsed = !state.secondaryCollapsed;
+    // Close the picker panel when collapsing
+    if (state.secondaryCollapsed) document.getElementById('secondary-panel').classList.remove('visible');
+    buildSecondaryPills();
+  };
+}
+
+function toggleSecondaryPanel() {
+  document.getElementById('secondary-panel').classList.toggle('visible');
+}
+
+/* ══════════════════════════════════════════
+   EVENT LISTENERS (all wired here, no inline onclick)
+══════════════════════════════════════════ */
+function wireEvents() {
+  document.getElementById('btn-login').addEventListener('click', doLogin);
+  document.getElementById('btn-register').addEventListener('click', doRegister);
+  document.getElementById('link-to-register').addEventListener('click', showRegister);
+  document.getElementById('link-to-login').addEventListener('click', showLogin);
+  document.getElementById('btn-logout').addEventListener('click', doLogout);
+  document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+  document.getElementById('btn-prev').addEventListener('click', () => changeMonth(-1));
+  document.getElementById('btn-next').addEventListener('click', () => changeMonth(1));
+  document.getElementById('currency-btn').addEventListener('click', () => {
+    document.getElementById('currency-dropdown').classList.toggle('open');
+  });
+  document.getElementById('btn-pos').addEventListener('click', () => setSign(1));
+  document.getElementById('btn-neg').addEventListener('click', () => setSign(-1));
+  document.getElementById('modal-amount').addEventListener('input', updateModalSecondary);
+  document.getElementById('btn-save').addEventListener('click', saveEntry);
+  document.getElementById('btn-cancel-modal').addEventListener('click', closeModal);
+  document.getElementById('btn-delete').addEventListener('click', deleteEntry);
+
+  // Close modal on overlay click
+  document.getElementById('modal-overlay').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
+  // Close currency dropdown on outside click
+  document.addEventListener('click', e => {
+    const wrap = document.querySelector('.currency-wrap');
+    const dd   = document.getElementById('currency-dropdown');
+    if (wrap && dd && !wrap.contains(e.target)) dd.classList.remove('open');
+  });
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+    if (e.key === 'Enter' && document.getElementById('modal-overlay').classList.contains('open') && e.ctrlKey) saveEntry();
+    if (e.key === 'Enter' && !document.getElementById('modal-overlay').classList.contains('open')) {
+      if (document.getElementById('auth-login').style.display !== 'none' && !state.currentUser) doLogin();
+      else if (document.getElementById('auth-register').style.display !== 'none' && !state.currentUser) doRegister();
+    }
+  });
+
+  // Enter key on password fields
+  document.getElementById('login-password').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+  document.getElementById('reg-password').addEventListener('keydown', e => { if(e.key==='Enter') doRegister(); });
+}
+
+/* ══════════════════════════════════════════
+   BOOT
+══════════════════════════════════════════ */
+(function init() {
+  loadPersisted();
+  applyTheme();
+  wireEvents();
+  if (state.currentUser) {
+    enterApp();
+  } else {
+    document.getElementById('auth-screen').style.display = '';
+    document.getElementById('main-screen').style.display = 'none';
+    showLogin();
+  }
+})();
+</script>
+</body>
+</html>
