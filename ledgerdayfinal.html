@@ -1,0 +1,1857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LedgerDay — Daily P&L Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0b0c0e;
+    --bg2: #13141a;
+    --bg3: #1c1e27;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #e8e9f0;
+    --text2: #8a8d9e;
+    --text3: #555869;
+    --green: #2dd4a0;
+    --green-dim: rgba(45,212,160,0.14);
+    --green-mid: rgba(45,212,160,0.22);
+    --green-solid: #1a7a5e;
+    --red: #f05c6b;
+    --red-dim: rgba(240,92,107,0.14);
+    --red-mid: rgba(240,92,107,0.22);
+    --red-solid: #a8303b;
+    --accent: #7c6dfa;
+    --accent-dim: rgba(124,109,250,0.15);
+    --radius: 10px;
+    --radius-lg: 16px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.35);
+  }
+  html.light {
+    --bg: #f4f5f7;
+    --bg2: #ffffff;
+    --bg3: #eceef2;
+    --border: rgba(0,0,0,0.08);
+    --border2: rgba(0,0,0,0.14);
+    --text: #111318;
+    --text2: #4a4f63;
+    --text3: #9096aa;
+    --green: #0d7a58;
+    --green-dim: rgba(13,122,88,0.10);
+    --green-mid: rgba(13,122,88,0.18);
+    --green-solid: #0d7a58;
+    --red: #c8293a;
+    --red-dim: rgba(200,41,58,0.09);
+    --red-mid: rgba(200,41,58,0.17);
+    --red-solid: #c8293a;
+    --accent: #5b4de8;
+    --accent-dim: rgba(91,77,232,0.12);
+    --shadow: 0 2px 12px rgba(0,0,0,0.10);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; }
+  html, body { transition: background 0.25s, color 0.25s; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Sora', sans-serif;
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+  input, textarea, select, button { font-family: inherit; }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
+
+  #app { min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* AUTH */
+  #auth-screen {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    padding: 2rem;
+    background:
+      radial-gradient(ellipse 60% 50% at 70% 20%, rgba(124,109,250,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 20% 80%, rgba(45,212,160,0.06) 0%, transparent 60%),
+      var(--bg);
+  }
+  html.light #auth-screen {
+    background:
+      radial-gradient(ellipse 60% 50% at 70% 20%, rgba(91,77,232,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 20% 80%, rgba(13,122,88,0.05) 0%, transparent 60%),
+      var(--bg);
+  }
+  .auth-card {
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: var(--radius-lg); padding: 2.5rem 2.25rem;
+    width: 100%; max-width: 400px;
+  }
+  .auth-logo {
+    font-size: 13px; font-weight: 500; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--accent);
+    font-family: 'DM Mono', monospace; margin-bottom: 1.5rem;
+  }
+  .auth-title { font-size: 22px; font-weight: 600; margin-bottom: 0.35rem; }
+  .auth-sub { font-size: 14px; color: var(--text2); margin-bottom: 2rem; }
+  .field { margin-bottom: 1rem; }
+  .field label {
+    display: block; font-size: 12px; font-weight: 500; color: var(--text2);
+    margin-bottom: 6px; letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .field input {
+    width: 100%; background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 10px 14px; font-size: 14px;
+    color: var(--text); outline: none; transition: border-color 0.2s;
+  }
+  .field input:focus { border-color: var(--accent); }
+  .field input::placeholder { color: var(--text3); }
+  .btn-primary {
+    width: 100%; background: var(--accent); color: #fff; border: none;
+    border-radius: var(--radius); padding: 11px 20px; font-size: 14px;
+    font-weight: 500; cursor: pointer; transition: opacity 0.2s, transform 0.1s;
+    margin-top: 0.5rem;
+  }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-primary:active { transform: scale(0.99); }
+  .auth-switch {
+    text-align: center; margin-top: 1.25rem; font-size: 13px; color: var(--text2);
+  }
+  .auth-switch a { color: var(--accent); cursor: pointer; text-decoration: none; }
+  .auth-switch a:hover { text-decoration: underline; }
+  .auth-error {
+    background: var(--red-dim); border: 1px solid rgba(240,92,107,0.25);
+    color: var(--red); border-radius: var(--radius); padding: 10px 14px;
+    font-size: 13px; margin-bottom: 1rem; display: none;
+  }
+
+  /* MAIN APP */
+  #main-screen { flex: 1; display: none; flex-direction: column; }
+
+  /* TOPBAR */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2rem; height: 56px; border-bottom: 1px solid var(--border);
+    background: var(--bg); position: sticky; top: 0; z-index: 50;
+  }
+  .topbar-logo {
+    font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent);
+  }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .user-pill {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 999px; padding: 5px 12px 5px 6px;
+    font-size: 13px; color: var(--text2);
+  }
+  .user-avatar {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--accent-dim); border: 1px solid var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; color: var(--accent);
+  }
+  .btn-logout {
+    background: none; border: 1px solid var(--border); color: var(--text2);
+    border-radius: var(--radius); padding: 6px 12px; font-size: 12px;
+    cursor: pointer; transition: border-color 0.2s, color 0.2s;
+  }
+  .btn-logout:hover { border-color: var(--red); color: var(--red); }
+  .coffee-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    text-decoration: none; color: var(--text2);
+    font-size: 12px; padding: 5px 12px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius); transition: border-color 0.2s, color 0.2s;
+    white-space: nowrap;
+  }
+  .coffee-link:hover { border-color: var(--accent); color: var(--accent); }
+  .coffee-text { display: inline; }
+
+  /* PROFILE TABS */
+  .profile-tabs-bar {
+    background: var(--bg); border-bottom: 1px solid var(--border);
+    padding: 0 2rem; overflow-x: auto; scrollbar-width: none;
+  }
+  .profile-tabs-bar::-webkit-scrollbar { display: none; }
+  .profile-tabs-scroll {
+    display: flex; align-items: stretch; gap: 2px;
+    min-width: max-content; padding: 8px 0 0;
+  }
+  .ptab {
+    display: flex; align-items: center; gap: 7px;
+    padding: 7px 16px; border: 1px solid transparent;
+    border-bottom: none; border-radius: 8px 8px 0 0;
+    background: none; font-size: 13px; font-weight: 500;
+    color: var(--text2); cursor: pointer; white-space: nowrap;
+    transition: background 0.15s, color 0.15s; font-family: inherit;
+  }
+  .ptab:hover { background: var(--bg3); color: var(--text); }
+  .ptab.active {
+    background: var(--bg2); color: var(--text);
+    border-color: var(--border2); border-bottom-color: var(--bg2);
+    position: relative; bottom: -1px; z-index: 1;
+  }
+  .ptab-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  .ptab-add {
+    border-style: dashed !important; border-color: var(--border2) !important;
+    color: var(--text3) !important; font-size: 12px !important;
+  }
+  .ptab-add:hover { color: var(--accent) !important; border-color: var(--accent) !important; }
+  .ptab-menu {
+    background: none; border: none; color: var(--text3);
+    cursor: pointer; padding: 2px 5px; font-size: 15px; line-height: 1;
+    border-radius: 4px; transition: color 0.15s; font-family: inherit;
+  }
+  .ptab-menu:hover { color: var(--text); background: var(--bg3); }
+  /* Context menu */
+  .ctx-menu {
+    position: fixed; z-index: 600;
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: 10px; padding: 5px; min-width: 170px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.45); font-size: 13px;
+  }
+  .ctx-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 11px; border-radius: 6px; cursor: pointer;
+    color: var(--text); transition: background 0.12s;
+  }
+  .ctx-row:hover { background: var(--bg3); }
+  .ctx-row.danger { color: var(--red); }
+  .ctx-sep { height: 1px; background: var(--border); margin: 4px 0; }
+  /* All-mode banner */
+  .all-banner {
+    background: var(--accent-dim); border-bottom: 1px solid var(--border);
+    color: var(--accent); font-size: 12px; text-align: center;
+    padding: 7px 16px; display: none;
+  }
+  /* read-only day cells in all-mode */
+  .day.readonly { cursor: default !important; }
+  .day.readonly:hover { background: var(--bg2) !important; border-color: var(--border) !important; }
+  .day.readonly.has-profit:hover { background: var(--green-dim) !important; }
+  .day.readonly.has-loss:hover   { background: var(--red-dim)   !important; }
+  /* per-profile breakdown dots in all-mode */
+  .day-breakdown { margin-top: 3px; display: flex; flex-direction: column; gap: 2px; }
+  .day-breakdown-row {
+    display: flex; align-items: center; gap: 3px;
+    font-size: 9px; font-family: 'DM Mono', monospace; line-height: 1.3;
+  }
+  .day-breakdown-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+  @media (max-width: 640px) { .coffee-text { display: none; } }
+
+  /* FULLSCREEN CALENDAR */
+  #calendar-section.fs-active {
+    position: fixed; inset: 0; z-index: 150;
+    background: var(--bg); overflow-y: auto;
+    padding: 1.25rem 1.5rem 2rem;
+    display: flex; flex-direction: column;
+  }
+  #calendar-section.fs-active #fs-topbar { display: flex !important; }
+  #calendar-section.fs-active #fs-btn-row { display: none !important; }
+  #calendar-section.fs-active .day { min-height: 110px; }
+  #btn-fullscreen:hover, #btn-fullscreen-fs:hover { border-color: var(--border2); color: var(--text); }
+  .theme-toggle {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius); width: 34px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 17px; line-height: 1;
+    transition: border-color 0.2s, background 0.2s; flex-shrink: 0;
+  }
+  .theme-toggle:hover { border-color: var(--border2); }
+
+  /* CONTENT */
+  .content {
+    flex: 1; max-width: 860px; width: 100%;
+    margin: 0 auto; padding: 2rem 1.5rem 4rem;
+  }
+
+  /* CALENDAR HEADER */
+  .cal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;
+  }
+  .cal-nav { display: flex; align-items: center; gap: 12px; }
+  .nav-btn {
+    background: var(--bg3); border: 1px solid var(--border); color: var(--text2);
+    width: 34px; height: 34px; border-radius: var(--radius); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .nav-btn:hover { border-color: var(--border2); color: var(--text); }
+  .month-label { font-size: 18px; font-weight: 600; min-width: 200px; }
+  .cal-controls { display: flex; align-items: center; gap: 10px; }
+
+  /* CURRENCY SELECTOR */
+  .currency-wrap { position: relative; }
+  .currency-btn {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+    border-radius: var(--radius); padding: 7px 12px; font-size: 13px;
+    cursor: pointer; font-family: 'DM Mono', monospace; transition: border-color 0.2s;
+  }
+  .currency-btn:hover { border-color: var(--border2); }
+  .currency-dropdown {
+    position: absolute; top: calc(100% + 6px); right: 0;
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: var(--radius-lg); padding: 8px; min-width: 220px;
+    z-index: 100; display: none; box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+    max-height: 340px; overflow-y: auto;
+  }
+  .currency-dropdown.open { display: block; }
+  .currency-dropdown-title {
+    font-size: 11px; font-weight: 500; color: var(--text3);
+    letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 8px 8px;
+  }
+  .currency-option {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 10px; border-radius: 8px; cursor: pointer;
+    transition: background 0.15s; font-size: 13px;
+  }
+  .currency-option:hover { background: var(--bg3); }
+  .currency-option.active { background: var(--accent-dim); }
+  .currency-option-left { display: flex; align-items: center; gap: 10px; }
+  .currency-flag { font-size: 18px; line-height: 1; }
+  .currency-code { font-family: 'DM Mono', monospace; font-weight: 500; font-size: 13px; }
+  .currency-name { font-size: 12px; color: var(--text2); }
+  .currency-check { color: var(--accent); font-size: 14px; opacity: 0; }
+  .currency-option.active .currency-check { opacity: 1; }
+
+  /* SECONDARY PILLS */
+  .secondary-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.25rem; }
+  .sec-pill {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 999px; padding: 4px 12px 4px 8px;
+    font-size: 12px; color: var(--text2); cursor: pointer;
+    transition: border-color 0.2s; font-family: 'DM Mono', monospace;
+  }
+  .sec-pill:hover { border-color: var(--border2); }
+  .sec-pill.active { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); }
+  .sec-pill-flag { font-size: 14px; }
+  .add-currency-btn {
+    display: flex; align-items: center; gap: 4px;
+    background: none; border: 1px dashed var(--border2);
+    border-radius: 999px; padding: 4px 12px; font-size: 12px;
+    color: var(--text3); cursor: pointer; transition: border-color 0.2s, color 0.2s;
+  }
+  .add-currency-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* SUMMARY CARDS */
+  .summary-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    gap: 10px; margin-bottom: 1.5rem;
+  }
+  .stat-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 14px 16px;
+  }
+  .stat-label {
+    font-size: 11px; color: var(--text3); font-weight: 500;
+    letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px;
+  }
+  .stat-val { font-size: 19px; font-weight: 600; font-family: 'DM Mono', monospace; }
+  .stat-val.pos { color: var(--green); }
+  .stat-val.neg { color: var(--red); }
+  .stat-val.neu { color: var(--text); }
+  .stat-secondary { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; margin-top: 3px; }
+
+  /* DOW HEADER */
+  .dow-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 4px; margin-bottom: 4px;
+  }
+  .dow {
+    text-align: center; font-size: 11px; color: var(--text3);
+    font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 0;
+  }
+
+  /* DAY GRID */
+  .day-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .day {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); min-height: 80px; padding: 8px 9px;
+    cursor: pointer; position: relative; overflow: hidden;
+    transition: border-color 0.18s, background 0.18s;
+  }
+  .day:hover { border-color: var(--border2); background: var(--bg3); }
+  .day.empty { cursor: default; border-color: transparent; background: transparent; }
+  .day.today { border-color: var(--accent) !important; }
+  .day.has-profit { background: var(--green-dim) !important; border-color: rgba(45,212,160,0.35); }
+  .day.has-profit:hover { background: var(--green-mid) !important; }
+  .day.has-loss { background: var(--red-dim) !important; border-color: rgba(240,92,107,0.35); }
+  .day.has-loss:hover { background: var(--red-mid) !important; }
+  html.light .day.has-profit { border-color: rgba(13,122,88,0.4); }
+  html.light .day.has-loss { border-color: rgba(200,41,58,0.4); }
+  .day-num {
+    font-size: 12px; font-weight: 500; color: var(--text3); position: relative; z-index: 1;
+  }
+  .day.today .day-num {
+    color: var(--accent); background: var(--accent-dim);
+    width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; font-size: 11px;
+  }
+  .day-primary {
+    font-size: 13px; font-weight: 600; font-family: 'DM Mono', monospace;
+    margin-top: 5px; position: relative; z-index: 1; line-height: 1.2;
+  }
+  .day-primary.pos { color: var(--green); }
+  .day-primary.neg { color: var(--red); }
+  .day-secondary {
+    font-size: 10px; font-family: 'DM Mono', monospace; color: var(--text3);
+    margin-top: 2px; position: relative; z-index: 1; line-height: 1.4;
+  }
+  .day-note {
+    font-size: 10px; color: var(--text3); margin-top: 3px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    position: relative; z-index: 1;
+  }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center;
+    z-index: 200; padding: 1rem; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: var(--radius-lg); padding: 1.75rem; width: 100%; max-width: 420px;
+    transform: translateY(8px); transition: transform 0.2s;
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-title { font-size: 15px; font-weight: 600; margin-bottom: 1.25rem; color: var(--text); }
+  .modal-date-badge {
+    display: inline-block; background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 999px; padding: 3px 12px; font-size: 12px;
+    font-family: 'DM Mono', monospace; color: var(--text2); margin-bottom: 1.25rem;
+  }
+  .sign-row { display: flex; gap: 8px; margin-bottom: 1rem; }
+  .sign-btn {
+    flex: 1; padding: 9px; border-radius: var(--radius); border: 1px solid var(--border);
+    background: none; font-size: 13px; font-weight: 500; cursor: pointer;
+    transition: all 0.15s; color: var(--text2);
+  }
+  .sign-btn.active-pos { background: var(--green-mid); border-color: var(--green); color: var(--green); }
+  .sign-btn.active-neg { background: var(--red-mid); border-color: var(--red); color: var(--red); }
+  .modal-field { margin-bottom: 1rem; }
+  .modal-field label {
+    display: block; font-size: 11px; font-weight: 500; color: var(--text3);
+    letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px;
+  }
+  .modal-input-wrap { position: relative; }
+  .modal-currency-prefix {
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    font-family: 'DM Mono', monospace; font-size: 14px; color: var(--text3);
+    pointer-events: none;
+  }
+  .modal-input {
+    width: 100%; background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 10px 14px 10px 32px;
+    font-size: 15px; font-family: 'DM Mono', monospace; color: var(--text);
+    outline: none; transition: border-color 0.2s;
+  }
+  .modal-input:focus { border-color: var(--accent); }
+  .modal-input::placeholder { color: var(--text3); }
+  .modal-textarea {
+    width: 100%; background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 10px 14px; font-size: 13px;
+    color: var(--text); outline: none; resize: vertical; min-height: 70px;
+    font-family: 'Sora', sans-serif; transition: border-color 0.2s;
+  }
+  .modal-textarea:focus { border-color: var(--accent); }
+  .modal-textarea::placeholder { color: var(--text3); }
+  .modal-btns { display: flex; gap: 8px; align-items: center; margin-top: 1.25rem; }
+  .btn-save {
+    flex: 1; background: var(--accent); color: #fff; border: none;
+    border-radius: var(--radius); padding: 10px; font-size: 14px;
+    font-weight: 500; cursor: pointer; transition: opacity 0.2s;
+  }
+  .btn-save:hover { opacity: 0.85; }
+  .btn-cancel-modal {
+    background: none; border: 1px solid var(--border); color: var(--text2);
+    border-radius: var(--radius); padding: 10px 16px; font-size: 13px;
+    cursor: pointer; transition: border-color 0.2s;
+  }
+  .btn-cancel-modal:hover { border-color: var(--border2); }
+  .btn-delete {
+    background: none; border: none; color: var(--red); font-size: 12px;
+    cursor: pointer; padding: 4px 0; opacity: 0.7; transition: opacity 0.2s;
+  }
+  .btn-delete:hover { opacity: 1; }
+  .modal-secondary-preview {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 10px 14px; margin-bottom: 1rem;
+  }
+  .modal-secondary-preview-label {
+    font-size: 11px; color: var(--text3); margin-bottom: 6px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .modal-secondary-list { display: flex; flex-direction: column; gap: 4px; }
+  .modal-secondary-item {
+    display: flex; justify-content: space-between;
+    font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text2);
+  }
+  .modal-secondary-item span:first-child { color: var(--text3); font-size: 12px; }
+
+  /* SECONDARY CURRENCY PANEL */
+  .secondary-panel {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem; display: none;
+  }
+  .secondary-panel.visible { display: block; }
+  .secondary-panel-title {
+    font-size: 11px; color: var(--text3); text-transform: uppercase;
+    letter-spacing: 0.06em; margin-bottom: 10px;
+  }
+  .secondary-panel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+  .secondary-toggle-item {
+    display: flex; align-items: center; gap: 8px; padding: 7px 10px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    cursor: pointer; font-size: 12px; transition: all 0.15s; color: var(--text2);
+  }
+  .secondary-toggle-item:hover { border-color: var(--border2); }
+  .secondary-toggle-item.active { border-color: var(--accent); background: var(--accent-dim); color: var(--text); }
+  .secondary-toggle-item .sti-check { margin-left: auto; font-size: 11px; color: var(--accent); opacity: 0; }
+  .secondary-toggle-item.active .sti-check { opacity: 1; }
+  .fx-note { font-size: 11px; color: var(--text3); margin-top: 0.5rem; font-style: italic; }
+
+  @media (max-width: 640px) {
+    .summary-grid { grid-template-columns: repeat(2, 1fr); }
+    #s-alltime { font-size: 16px; }
+    .content { padding: 1.25rem 1rem 3rem; }
+    .topbar { padding: 0 1rem; }
+    .month-label { font-size: 15px; min-width: 0; }
+    .day { min-height: 60px; padding: 5px 6px; }
+    .day-primary { font-size: 11px; }
+  }
+
+  /* CUSTOM PROMPT MODAL */
+  .cprompt-overlay {
+    position: fixed; inset: 0; z-index: 800;
+    background: rgba(0,0,0,0.55); display: flex;
+    align-items: center; justify-content: center; padding: 1rem;
+  }
+  .cprompt-box {
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: 14px; padding: 1.5rem 1.5rem 1.25rem;
+    min-width: 300px; max-width: 380px; width: 100%;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  }
+  .cprompt-label {
+    font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--text);
+  }
+  .cprompt-input {
+    width: 100%; background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; font-size: 14px;
+    color: var(--text); outline: none; font-family: inherit;
+    transition: border-color 0.2s; margin-bottom: 14px;
+  }
+  .cprompt-input:focus { border-color: var(--accent); }
+  .cprompt-btns { display: flex; gap: 8px; justify-content: flex-end; }
+  .cprompt-cancel {
+    background: none; border: 1px solid var(--border); color: var(--text2);
+    border-radius: 8px; padding: 8px 16px; font-size: 13px;
+    cursor: pointer; font-family: inherit; transition: border-color 0.2s;
+  }
+  .cprompt-cancel:hover { border-color: var(--border2); }
+  .cprompt-ok {
+    background: var(--accent); color: #fff; border: none;
+    border-radius: 8px; padding: 8px 18px; font-size: 13px;
+    font-weight: 500; cursor: pointer; font-family: inherit;
+    transition: opacity 0.2s;
+  }
+  .cprompt-ok:hover { opacity: 0.85; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- AUTH SCREEN -->
+  <div id="auth-screen">
+    <div class="auth-card">
+      <div class="auth-logo">LedgerDay</div>
+      <div id="auth-login">
+        <div class="auth-title">Welcome back</div>
+        <div class="auth-sub">Track every dollar made and lost.</div>
+        <div class="auth-error" id="login-error"></div>
+        <div class="field"><label>Email</label><input type="email" id="login-email" placeholder="you@email.com" autocomplete="email" /></div>
+        <div class="field"><label>Password</label><input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" /></div>
+        <button class="btn-primary" id="btn-login">Sign In</button>
+        <div class="auth-switch">Don't have an account? <a id="link-to-register">Create one</a></div>
+      </div>
+      <div id="auth-register" style="display:none">
+        <div class="auth-title">Create account</div>
+        <div class="auth-sub">Your P&L data saves securely to your account.</div>
+        <div class="auth-error" id="register-error"></div>
+        <div class="field"><label>Name</label><input type="text" id="reg-name" placeholder="Alex Johnson" autocomplete="name" /></div>
+        <div class="field"><label>Email</label><input type="email" id="reg-email" placeholder="you@email.com" autocomplete="email" /></div>
+        <div class="field"><label>Password</label><input type="password" id="reg-password" placeholder="At least 6 characters" autocomplete="new-password" /></div>
+        <button class="btn-primary" id="btn-register">Create Account</button>
+        <div class="auth-switch">Already have an account? <a id="link-to-login">Sign in</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="main-screen">
+    <div class="topbar">
+      <div class="topbar-logo">LedgerDay</div>
+      <div class="topbar-right">
+        <a href="https://www.patreon.com/c/ginmoon" target="_blank" rel="noopener noreferrer" class="coffee-link" title="Support on Patreon">
+          <span>☕</span><span class="coffee-text">buy me a coffee</span>
+        </a>
+        <button class="theme-toggle" id="theme-toggle" title="Toggle light/dark mode">🌙</button>
+        <div class="user-pill">
+          <div class="user-avatar" id="user-avatar">?</div>
+          <span id="user-name-display">—</span>
+        </div>
+        <button class="btn-logout" id="btn-logout">Sign out</button>
+      </div>
+    </div>
+
+
+    <!-- Profile tabs -->
+    <div class="profile-tabs-bar">
+      <div class="profile-tabs-scroll" id="profile-tabs"></div>
+    </div>
+    <!-- All-accounts read-only banner -->
+    <div class="all-banner" id="all-banner">
+      📊 Combined view — select a specific account tab to log entries
+    </div>
+    <div class="content">
+      <div class="cal-header">
+        <div class="cal-nav">
+          <button class="nav-btn" id="btn-prev">&#8249;</button>
+          <div class="month-label" id="month-label"></div>
+          <button class="nav-btn" id="btn-next">&#8250;</button>
+        </div>
+        <div class="cal-controls">
+          <div class="currency-wrap">
+            <button class="currency-btn" id="currency-btn">
+              <span id="main-currency-flag">🇺🇸</span>
+              <span id="main-currency-code">USD</span>
+              <span style="color:var(--text3);font-size:12px">▾</span>
+            </button>
+            <div class="currency-dropdown" id="currency-dropdown">
+              <div class="currency-dropdown-title">Primary currency</div>
+              <div id="primary-currency-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:1rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;">Also show in</div>
+          <button id="btn-collapse-secondary" title="Collapse currency display" style="display:none;background:none;border:none;cursor:pointer;font-size:11px;color:var(--text3);padding:2px 6px;border-radius:6px;transition:color 0.2s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text3)'">Hide ▲</button>
+        </div>
+        <div id="secondary-collapsed-bar" style="display:none;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;"></div>
+        <div class="secondary-pills" id="secondary-pills">
+          <button class="add-currency-btn" id="btn-add-currency">+ Add currency</button>
+        </div>
+      </div>
+
+      <div class="secondary-panel" id="secondary-panel">
+        <div class="secondary-panel-title" id="secondary-panel-title">Select currencies to display alongside USD</div>
+        <div class="secondary-panel-grid" id="secondary-panel-grid"></div>
+        <div class="fx-note">* Exchange rates are approximate and updated periodically.</div>
+      </div>
+
+      <div class="summary-grid">
+        <div class="stat-card">
+          <div class="stat-label">Monthly P&L</div>
+          <div class="stat-val neu" id="s-total">$0</div>
+          <div class="stat-secondary" id="s-total-sec"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Best day</div>
+          <div class="stat-val pos" id="s-best">—</div>
+          <div class="stat-secondary" id="s-best-sec"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Worst day</div>
+          <div class="stat-val neg" id="s-worst">—</div>
+          <div class="stat-secondary" id="s-worst-sec"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Win days</div>
+          <div class="stat-val neu" id="s-wins">—</div>
+          <div class="stat-secondary" id="s-wins-sec"></div>
+        </div>
+        <div class="stat-card" style="border-color: var(--accent); background: var(--accent-dim);">
+          <div class="stat-label" style="color:var(--accent);">Total Profit (All Time)</div>
+          <div class="stat-val neu" id="s-alltime">$0</div>
+          <div class="stat-secondary" id="s-alltime-sec"></div>
+        </div>
+      </div>
+
+      <div id="calendar-section">
+        <!-- Fullscreen top bar: shown only in fullscreen mode -->
+        <div id="fs-topbar" style="display:none;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+          <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);">LedgerDay</div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <button class="nav-btn" id="btn-prev-fs">&#8249;</button>
+            <div class="month-label" id="month-label-fs" style="font-size:16px;min-width:180px;text-align:center;"></div>
+            <button class="nav-btn" id="btn-next-fs">&#8250;</button>
+          </div>
+          <button id="btn-fullscreen-fs" title="Exit fullscreen" style="display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:var(--radius);padding:5px 12px;font-size:12px;cursor:pointer;transition:border-color 0.2s,color 0.2s;">
+            <span>✕</span><span>Exit</span>
+          </button>
+        </div>
+        <!-- Normal-mode fullscreen button -->
+        <div id="fs-btn-row" style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:6px;">
+          <button id="btn-fullscreen" title="Fullscreen calendar" style="display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:var(--radius);padding:5px 12px;font-size:12px;cursor:pointer;transition:border-color 0.2s,color 0.2s;">
+            <span id="fs-icon">⛶</span><span id="fs-label">Fullscreen</span>
+          </button>
+        </div>
+        <div class="dow-grid">
+          <div class="dow">Sun</div><div class="dow">Mon</div><div class="dow">Tue</div>
+          <div class="dow">Wed</div><div class="dow">Thu</div><div class="dow">Fri</div><div class="dow">Sat</div>
+        </div>
+        <div class="day-grid" id="day-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Entry Modal -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <div class="modal-date-badge" id="modal-date-badge"></div>
+      <div class="sign-row">
+        <button class="sign-btn active-pos" id="btn-pos">▲ Profit</button>
+        <button class="sign-btn" id="btn-neg">▼ Loss</button>
+      </div>
+      <div class="modal-field">
+        <label id="modal-amount-label">Amount (USD)</label>
+        <div class="modal-input-wrap">
+          <span class="modal-currency-prefix" id="modal-prefix">$</span>
+          <input class="modal-input" type="number" id="modal-amount" placeholder="0.00" min="0" step="0.01" />
+        </div>
+      </div>
+      <div class="modal-secondary-preview" id="modal-secondary-preview" style="display:none">
+        <div class="modal-secondary-preview-label">Equivalent in</div>
+        <div class="modal-secondary-list" id="modal-secondary-list"></div>
+      </div>
+      <div class="modal-field">
+        <label>Note (optional)</label>
+        <textarea class="modal-textarea" id="modal-note" placeholder="e.g. AAPL calls, crypto swing trade…"></textarea>
+      </div>
+      <div class="modal-btns">
+        <button class="btn-delete" id="btn-delete" style="display:none">🗑 Delete</button>
+        <button class="btn-cancel-modal" id="btn-cancel-modal">Cancel</button>
+        <button class="btn-save" id="btn-save">Save</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer style="text-align:center;padding:1.5rem 1rem 2rem;border-top:1px solid var(--border);margin-top:auto;">
+  <a href="https://www.patreon.com/ginmoon" target="_blank" rel="noopener noreferrer"
+     style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:var(--text2);font-size:13px;font-family:'Sora',sans-serif;transition:color 0.2s;"
+     onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">
+    <span style="font-size:16px">☕</span>
+    <span>buy me a coffee — anything helps</span>
+    <span style="font-size:11px;font-family:'DM Mono',monospace;opacity:0.5">patreon.com/ginmoon ↗</span>
+  </a>
+</footer>
+
+<script>
+/* ══════════════════════════════════════
+   CURRENCY DATA
+══════════════════════════════════════ */
+var CURRENCIES = [
+  { code: 'USD', flag: '🇺🇸', name: 'US Dollar',        symbol: '$',   rate: 1 },
+  { code: 'EUR', flag: '🇪🇺', name: 'Euro',              symbol: '€',   rate: 0.92 },
+  { code: 'GBP', flag: '🇬🇧', name: 'British Pound',     symbol: '£',   rate: 0.79 },
+  { code: 'JPY', flag: '🇯🇵', name: 'Japanese Yen',      symbol: '¥',   rate: 149.5 },
+  { code: 'CAD', flag: '🇨🇦', name: 'Canadian Dollar',   symbol: 'C$',  rate: 1.36 },
+  { code: 'AUD', flag: '🇦🇺', name: 'Australian Dollar', symbol: 'A$',  rate: 1.53 },
+  { code: 'CHF', flag: '🇨🇭', name: 'Swiss Franc',       symbol: 'Fr',  rate: 0.90 },
+  { code: 'CNY', flag: '🇨🇳', name: 'Chinese Yuan',      symbol: '¥',   rate: 7.24 },
+  { code: 'INR', flag: '🇮🇳', name: 'Indian Rupee',      symbol: '₹',   rate: 83.1 },
+  { code: 'KRW', flag: '🇰🇷', name: 'Korean Won',        symbol: '₩',   rate: 1325 },
+  { code: 'MXN', flag: '🇲🇽', name: 'Mexican Peso',      symbol: '$',   rate: 17.2 },
+  { code: 'BRL', flag: '🇧🇷', name: 'Brazilian Real',    symbol: 'R$',  rate: 4.97 },
+  { code: 'SGD', flag: '🇸🇬', name: 'Singapore Dollar',  symbol: 'S$',  rate: 1.34 },
+  { code: 'HKD', flag: '🇭🇰', name: 'Hong Kong Dollar',  symbol: 'HK$', rate: 7.82 },
+  { code: 'NOK', flag: '🇳🇴', name: 'Norwegian Krone',   symbol: 'kr',  rate: 10.6 },
+];
+
+var PROFILE_COLORS = [
+  '#7c6dfa','#2dd4a0','#f05c6b','#f5a623',
+  '#4fc3f7','#ce93d8','#80cbc4','#ffb74d'
+];
+
+/* ══════════════════════════════════════
+   STATE
+══════════════════════════════════════ */
+var state = {
+  currentUser:         null,
+  users:               {},
+  viewYear:            new Date().getFullYear(),
+  viewMonth:           new Date().getMonth(),
+  primaryCurrency:     'USD',
+  secondaryCurrencies: [],
+  modalDate:           null,
+  modalSign:           1,
+  theme:               'dark',
+  secondaryCollapsed:  false,
+  activeProfileId:     'all',
+};
+
+/* ══════════════════════════════════════
+   PERSISTENCE
+══════════════════════════════════════ */
+function persist() {
+  try {
+    localStorage.setItem('ld_users', JSON.stringify(state.users));
+    localStorage.setItem('ld_session', JSON.stringify({
+      email:               state.currentUser ? state.currentUser.email : null,
+      primaryCurrency:     state.primaryCurrency,
+      secondaryCurrencies: state.secondaryCurrencies,
+      theme:               state.theme,
+      activeProfileId:     state.activeProfileId,
+    }));
+  } catch(e) {}
+}
+
+function loadPersisted() {
+  try {
+    var u = localStorage.getItem('ld_users');
+    if (u) state.users = JSON.parse(u);
+    var s = localStorage.getItem('ld_session');
+    if (s) {
+      var sess = JSON.parse(s);
+      state.primaryCurrency     = sess.primaryCurrency     || 'USD';
+      state.secondaryCurrencies = sess.secondaryCurrencies || [];
+      state.theme               = sess.theme               || 'dark';
+      state.activeProfileId     = sess.activeProfileId     || 'all';
+      if (sess.email && state.users[sess.email]) {
+        state.currentUser = { email: sess.email, name: state.users[sess.email].name };
+      }
+    }
+  } catch(e) {}
+}
+
+/* ══════════════════════════════════════
+   CUSTOM PROMPT HELPER
+══════════════════════════════════════ */
+function showPrompt(label, defaultVal, callback) {
+  var overlay = document.createElement('div');
+  overlay.className = 'cprompt-overlay';
+
+  var box = document.createElement('div');
+  box.className = 'cprompt-box';
+
+  var lbl = document.createElement('div');
+  lbl.className = 'cprompt-label';
+  lbl.textContent = label;
+  box.appendChild(lbl);
+
+  var inp = document.createElement('input');
+  inp.className = 'cprompt-input';
+  inp.value = defaultVal || '';
+  box.appendChild(inp);
+
+  var btns = document.createElement('div');
+  btns.className = 'cprompt-btns';
+
+  var cancelBtn = document.createElement('button');
+  cancelBtn.className = 'cprompt-cancel';
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.addEventListener('click', function() { overlay.remove(); });
+
+  var okBtn = document.createElement('button');
+  okBtn.className = 'cprompt-ok';
+  okBtn.textContent = 'OK';
+  okBtn.addEventListener('click', function() {
+    var val = inp.value.trim();
+    overlay.remove();
+    if (val) callback(val);
+  });
+
+  btns.appendChild(cancelBtn);
+  btns.appendChild(okBtn);
+  box.appendChild(btns);
+  overlay.appendChild(box);
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+
+  inp.focus();
+  inp.select();
+  inp.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { okBtn.click(); }
+    if (e.key === 'Escape') { overlay.remove(); }
+  });
+}
+
+/* ══════════════════════════════════════
+   PROFILE HELPERS
+══════════════════════════════════════ */
+function userData() {
+  if (!state.currentUser) return null;
+  return state.users[state.currentUser.email];
+}
+
+function getProfiles() {
+  var u = userData();
+  if (!u) return [];
+  // Migrate old single-entry format
+  if (!u.profiles) {
+    u.profiles = [{
+      id:      'main',
+      name:    'Main Account',
+      color:   PROFILE_COLORS[0],
+      entries: u.entries || {}
+    }];
+    delete u.entries;
+  }
+  return u.profiles;
+}
+
+function getActiveProfile() {
+  if (state.activeProfileId === 'all') return null;
+  var profiles = getProfiles();
+  for (var i = 0; i < profiles.length; i++) {
+    if (profiles[i].id === state.activeProfileId) return profiles[i];
+  }
+  return null;
+}
+
+function getMergedEntries() {
+  var profiles = getProfiles();
+  var merged = {};
+  for (var pi = 0; pi < profiles.length; pi++) {
+    var prof = profiles[pi];
+    var entries = prof.entries || {};
+    var dates = Object.keys(entries);
+    for (var di = 0; di < dates.length; di++) {
+      var date = dates[di];
+      if (!merged[date]) merged[date] = { amount: 0, note: '', perProfile: [] };
+      merged[date].amount += entries[date].amount;
+      merged[date].perProfile.push({
+        name:   prof.name,
+        color:  prof.color,
+        amount: entries[date].amount
+      });
+    }
+  }
+  return merged;
+}
+
+function getEntries() {
+  if (state.activeProfileId === 'all') return getMergedEntries();
+  var prof = getActiveProfile();
+  return prof ? (prof.entries || {}) : {};
+}
+
+function makeId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+function nextColor() {
+  var profiles = getProfiles();
+  var used = {};
+  for (var i = 0; i < profiles.length; i++) used[profiles[i].color] = true;
+  for (var j = 0; j < PROFILE_COLORS.length; j++) {
+    if (!used[PROFILE_COLORS[j]]) return PROFILE_COLORS[j];
+  }
+  return PROFILE_COLORS[profiles.length % PROFILE_COLORS.length];
+}
+
+function addProfile(name) {
+  var u = userData();
+  if (!u) return null;
+  getProfiles(); // ensure migration
+  var prof = { id: makeId(), name: name, color: nextColor(), entries: {} };
+  u.profiles.push(prof);
+  persist();
+  return prof;
+}
+
+function deleteProfile(id) {
+  var u = userData();
+  if (!u) return;
+  u.profiles = u.profiles.filter(function(p) { return p.id !== id; });
+  if (state.activeProfileId === id) state.activeProfileId = 'all';
+  persist();
+}
+
+function renameProfile(id, newName) {
+  var profiles = getProfiles();
+  for (var i = 0; i < profiles.length; i++) {
+    if (profiles[i].id === id) { profiles[i].name = newName; break; }
+  }
+  persist();
+}
+
+function setProfileColor(id, color) {
+  var profiles = getProfiles();
+  for (var i = 0; i < profiles.length; i++) {
+    if (profiles[i].id === id) { profiles[i].color = color; break; }
+  }
+  persist();
+}
+
+/* ══════════════════════════════════════
+   HELPERS
+══════════════════════════════════════ */
+function dateKey(y, m, d) {
+  return y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+}
+
+function getCurrency(code) {
+  for (var i = 0; i < CURRENCIES.length; i++) {
+    if (CURRENCIES[i].code === code) return CURRENCIES[i];
+  }
+  return CURRENCIES[0];
+}
+
+function formatAmount(usdAmt, curCode) {
+  var cur  = getCurrency(curCode);
+  var conv = Math.abs(usdAmt) * cur.rate;
+  var sign = usdAmt >= 0 ? '+' : '-';
+  if (curCode === 'JPY' || curCode === 'KRW') {
+    return sign + cur.symbol + Math.round(conv).toLocaleString();
+  }
+  return sign + cur.symbol + conv.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function primaryToUSD(amount) {
+  return amount / getCurrency(state.primaryCurrency).rate;
+}
+
+function usdToPrimary(usd) {
+  return usd * getCurrency(state.primaryCurrency).rate;
+}
+
+function showError(id, msg) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function hideError(id) {
+  var el = document.getElementById(id);
+  if (el) el.style.display = 'none';
+}
+
+function initials(name) {
+  if (!name) return '?';
+  return name.trim().split(/\s+/).map(function(w) { return w[0]; }).join('').toUpperCase().slice(0, 2);
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function el(id) { return document.getElementById(id); }
+
+/* ══════════════════════════════════════
+   THEME
+══════════════════════════════════════ */
+function applyTheme() {
+  if (state.theme === 'light') {
+    document.documentElement.classList.add('light');
+    el('theme-toggle').textContent = '☀️';
+  } else {
+    document.documentElement.classList.remove('light');
+    el('theme-toggle').textContent = '🌙';
+  }
+}
+
+function toggleTheme() {
+  state.theme = state.theme === 'dark' ? 'light' : 'dark';
+  applyTheme();
+  persist();
+}
+
+/* ══════════════════════════════════════
+   AUTH
+══════════════════════════════════════ */
+function showLogin() {
+  el('auth-login').style.display = '';
+  el('auth-register').style.display = 'none';
+  hideError('login-error');
+  hideError('register-error');
+}
+
+function showRegister() {
+  el('auth-login').style.display = 'none';
+  el('auth-register').style.display = '';
+  hideError('login-error');
+  hideError('register-error');
+}
+
+function doLogin() {
+  hideError('login-error');
+  var email    = el('login-email').value.trim().toLowerCase();
+  var password = el('login-password').value;
+  if (!email)    { showError('login-error', 'Please enter your email.');    return; }
+  if (!password) { showError('login-error', 'Please enter your password.'); return; }
+  var user = state.users[email];
+  if (!user)                    { showError('login-error', 'No account found. Create one below.'); return; }
+  if (user.password !== password) { showError('login-error', 'Incorrect password.');               return; }
+  state.currentUser = { email: email, name: user.name };
+  persist();
+  enterApp();
+}
+
+function doRegister() {
+  hideError('register-error');
+  var name     = el('reg-name').value.trim();
+  var email    = el('reg-email').value.trim().toLowerCase();
+  var password = el('reg-password').value;
+  if (!name)  { showError('register-error', 'Please enter your name.'); return; }
+  if (!email || !email.includes('@') || !email.includes('.')) {
+    showError('register-error', 'Please enter a valid email.'); return;
+  }
+  if (password.length < 6) { showError('register-error', 'Password must be at least 6 characters.'); return; }
+  if (state.users[email])  { showError('register-error', 'Account already exists. Sign in instead.'); return; }
+  state.users[email] = {
+    name: name, password: password,
+    profiles: [{ id: 'main', name: 'Main Account', color: PROFILE_COLORS[0], entries: {} }]
+  };
+  state.currentUser = { email: email, name: name };
+  persist();
+  enterApp();
+}
+
+function doLogout() {
+  state.currentUser    = null;
+  state.activeProfileId = 'all';
+  persist();
+  ['login-email','login-password','reg-name','reg-email','reg-password'].forEach(function(id) {
+    var e = el(id); if (e) e.value = '';
+  });
+  el('main-screen').style.display = 'none';
+  el('auth-screen').style.display = '';
+  showLogin();
+}
+
+function enterApp() {
+  el('auth-screen').style.display = 'none';
+  el('main-screen').style.display = 'flex';
+  el('user-name-display').textContent = state.currentUser.name;
+  el('user-avatar').textContent = initials(state.currentUser.name);
+  getProfiles(); // ensure migration
+  applyTheme();
+  buildCurrencyUI();
+  renderProfileTabs();
+  renderCalendar();
+}
+
+/* ══════════════════════════════════════
+   PROFILE TABS UI
+══════════════════════════════════════ */
+function renderProfileTabs() {
+  var container = el('profile-tabs');
+  var profiles  = getProfiles();
+  var isAll     = state.activeProfileId === 'all';
+  container.innerHTML = '';
+
+  // All-accounts tab
+  var allTab = document.createElement('button');
+  allTab.className = 'ptab' + (isAll ? ' active' : '');
+  allTab.innerHTML = '<span style="font-size:14px">📊</span> All Accounts';
+  allTab.addEventListener('click', function() { switchProfile('all'); });
+  container.appendChild(allTab);
+
+  // Individual profile tabs
+  for (var i = 0; i < profiles.length; i++) {
+    (function(prof) {
+      var isActive = state.activeProfileId === prof.id;
+
+      var wrap = document.createElement('div');
+      wrap.style.cssText = 'display:flex;align-items:stretch;';
+
+      var tab = document.createElement('button');
+      tab.className = 'ptab' + (isActive ? ' active' : '');
+      if (isActive) tab.style.cssText = 'border-color:' + prof.color + ';color:' + prof.color + ';background:var(--bg2);';
+
+      var dot = document.createElement('span');
+      dot.className = 'ptab-dot';
+      dot.style.background = prof.color;
+      tab.appendChild(dot);
+
+      var nameSpan = document.createElement('span');
+      nameSpan.textContent = prof.name;
+      tab.appendChild(nameSpan);
+
+      tab.addEventListener('click', function() { switchProfile(prof.id); });
+      wrap.appendChild(tab);
+
+      // ⋯ menu button — only on active tab
+      if (isActive) {
+        var menuBtn = document.createElement('button');
+        menuBtn.className = 'ptab-menu';
+        menuBtn.title = 'Options';
+        menuBtn.textContent = '⋯';
+        menuBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          openProfileMenu(prof.id, menuBtn);
+        });
+        wrap.appendChild(menuBtn);
+      }
+
+      container.appendChild(wrap);
+    })(profiles[i]);
+  }
+
+  // + New Account button
+  var addBtn = document.createElement('button');
+  addBtn.className = 'ptab ptab-add';
+  addBtn.textContent = '+ New Account';
+  addBtn.addEventListener('click', promptAddProfile);
+  container.appendChild(addBtn);
+
+  // Show/hide all-mode banner
+  el('all-banner').style.display = isAll ? '' : 'none';
+}
+
+function switchProfile(id) {
+  state.activeProfileId = id;
+  persist();
+  renderProfileTabs();
+  renderCalendar();
+}
+
+function promptAddProfile() {
+  showPrompt('Name for new account:', 'New Account', function(name) {
+    var prof = addProfile(name);
+    state.activeProfileId = prof.id;
+    persist();
+    renderProfileTabs();
+    renderCalendar();
+  });
+}
+
+/* ══════════════════════════════════════
+   PROFILE CONTEXT MENU
+══════════════════════════════════════ */
+function openProfileMenu(id, anchor) {
+  // Remove any existing menu
+  var existing = document.getElementById('profile-ctx-menu');
+  if (existing) existing.remove();
+
+  var profiles = getProfiles();
+  var prof = null;
+  for (var i = 0; i < profiles.length; i++) {
+    if (profiles[i].id === id) { prof = profiles[i]; break; }
+  }
+  if (!prof) return;
+
+  var menu = document.createElement('div');
+  menu.id = 'profile-ctx-menu';
+  menu.className = 'ctx-menu';
+
+  function makeRow(icon, label, danger, handler) {
+    var row = document.createElement('div');
+    row.className = 'ctx-row' + (danger ? ' danger' : '');
+    row.textContent = icon + '  ' + label;
+    row.addEventListener('click', function() { menu.remove(); handler(); });
+    return row;
+  }
+
+  function makeSep() {
+    var s = document.createElement('div');
+    s.className = 'ctx-sep';
+    return s;
+  }
+
+  // Rename
+  menu.appendChild(makeRow('✏️', 'Rename', false, function() {
+    var current = prof.name;
+    menu.remove();
+    showPrompt('Rename "' + current + '" to:', current, function(newName) {
+      if (newName !== current) {
+        renameProfile(id, newName);
+        renderProfileTabs();
+        renderCalendar();
+      }
+    });
+  }));
+
+  // Change color
+  menu.appendChild(makeRow('🎨', 'Change color', false, function() {
+    openColorPicker(id);
+  }));
+
+  menu.appendChild(makeSep());
+
+  // Delete
+  menu.appendChild(makeRow('🗑', 'Delete account', true, function() {
+    if (profiles.length <= 1) { alert("You can't delete your only account."); return; }
+    if (!confirm('Delete "' + prof.name + '"? All entries will be lost.')) return;
+    deleteProfile(id);
+    renderProfileTabs();
+    renderCalendar();
+  }));
+
+  // Position menu below anchor
+  var rect = anchor.getBoundingClientRect();
+  menu.style.top  = (rect.bottom + 6) + 'px';
+  menu.style.left = Math.min(rect.left, window.innerWidth - 190) + 'px';
+  document.body.appendChild(menu);
+
+  // Close on outside click
+  setTimeout(function() {
+    function outsideHandler(e) {
+      if (!menu.contains(e.target)) {
+        menu.remove();
+        document.removeEventListener('click', outsideHandler);
+      }
+    }
+    document.addEventListener('click', outsideHandler);
+  }, 30);
+}
+
+/* ══════════════════════════════════════
+   COLOR PICKER
+══════════════════════════════════════ */
+function openColorPicker(id) {
+  var profiles = getProfiles();
+  var prof = null;
+  for (var i = 0; i < profiles.length; i++) {
+    if (profiles[i].id === id) { prof = profiles[i]; break; }
+  }
+  if (!prof) return;
+
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:700;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;';
+
+  var box = document.createElement('div');
+  box.style.cssText = 'background:var(--bg2);border:1px solid var(--border2);border-radius:14px;padding:1.25rem;min-width:240px;box-shadow:0 12px 40px rgba(0,0,0,0.5);';
+
+  var title = document.createElement('div');
+  title.style.cssText = 'font-size:13px;font-weight:600;margin-bottom:14px;';
+  title.textContent = 'Color for "' + prof.name + '"';
+  box.appendChild(title);
+
+  var swatches = document.createElement('div');
+  swatches.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;';
+
+  PROFILE_COLORS.forEach(function(color) {
+    var sw = document.createElement('div');
+    sw.style.cssText = 'width:30px;height:30px;border-radius:50%;background:' + color + ';cursor:pointer;'
+      + 'border:3px solid ' + (color === prof.color ? '#fff' : 'transparent') + ';transition:transform 0.15s;';
+    sw.addEventListener('mouseover', function() { sw.style.transform = 'scale(1.2)'; });
+    sw.addEventListener('mouseout',  function() { sw.style.transform = 'scale(1)'; });
+    sw.addEventListener('click', function() {
+      setProfileColor(id, color);
+      overlay.remove();
+      renderProfileTabs();
+      renderCalendar();
+    });
+    swatches.appendChild(sw);
+  });
+  box.appendChild(swatches);
+
+  var cancelBtn = document.createElement('button');
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.style.cssText = 'background:none;border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:7px 16px;font-size:13px;cursor:pointer;font-family:inherit;';
+  cancelBtn.addEventListener('click', function() { overlay.remove(); });
+  box.appendChild(cancelBtn);
+
+  overlay.appendChild(box);
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+/* ══════════════════════════════════════
+   CALENDAR
+══════════════════════════════════════ */
+function changeMonth(delta) {
+  state.viewMonth += delta;
+  if (state.viewMonth > 11) { state.viewMonth = 0; state.viewYear++; }
+  if (state.viewMonth < 0)  { state.viewMonth = 11; state.viewYear--; }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  var y = state.viewYear;
+  var m = state.viewMonth;
+  var isAll    = state.activeProfileId === 'all';
+  var entries  = getEntries();
+  var profiles = getProfiles();
+
+  var label = new Date(y, m, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  el('month-label').textContent = label;
+  updateFsMonthLabel();
+
+  var today      = new Date();
+  var firstDay   = new Date(y, m, 1).getDay();
+  var daysInMonth = new Date(y, m + 1, 0).getDate();
+
+  var grid = el('day-grid');
+  grid.innerHTML = '';
+
+  // Empty leading cells
+  for (var i = 0; i < firstDay; i++) {
+    var empty = document.createElement('div');
+    empty.className = 'day empty';
+    grid.appendChild(empty);
+  }
+
+  // Day cells
+  for (var d = 1; d <= daysInMonth; d++) {
+    var key   = dateKey(y, m, d);
+    var entry = entries[key];
+    var isToday = (today.getFullYear() === y && today.getMonth() === m && today.getDate() === d);
+
+    var cell = document.createElement('div');
+    var cls = 'day';
+    if (isToday) cls += ' today';
+    if (isAll)   cls += ' readonly';
+    if (entry)   cls += entry.amount >= 0 ? ' has-profit' : ' has-loss';
+    cell.className = cls;
+    cell.dataset.date = key;
+
+    // Day number
+    var numDiv = document.createElement('div');
+    numDiv.className = 'day-num';
+    numDiv.textContent = d;
+    cell.appendChild(numDiv);
+
+    if (entry) {
+      // Primary amount
+      var amtDiv = document.createElement('div');
+      amtDiv.className = 'day-primary ' + (entry.amount >= 0 ? 'pos' : 'neg');
+      amtDiv.textContent = formatAmount(entry.amount, state.primaryCurrency);
+      cell.appendChild(amtDiv);
+
+      if (isAll && entry.perProfile && entry.perProfile.length > 1) {
+        // Per-profile breakdown
+        var breakdown = document.createElement('div');
+        breakdown.className = 'day-breakdown';
+        for (var pi = 0; pi < entry.perProfile.length; pi++) {
+          var pp = entry.perProfile[pi];
+          var row = document.createElement('div');
+          row.className = 'day-breakdown-row';
+          var dot = document.createElement('span');
+          dot.className = 'day-breakdown-dot';
+          dot.style.background = pp.color;
+          var amtSpan = document.createElement('span');
+          amtSpan.style.color = pp.amount >= 0 ? 'var(--green)' : 'var(--red)';
+          amtSpan.textContent = formatAmount(pp.amount, state.primaryCurrency);
+          row.appendChild(dot);
+          row.appendChild(amtSpan);
+          breakdown.appendChild(row);
+        }
+        cell.appendChild(breakdown);
+      } else if (!isAll) {
+        // Secondary currencies
+        if (state.secondaryCurrencies.length) {
+          var secDiv = document.createElement('div');
+          secDiv.className = 'day-secondary';
+          for (var si = 0; si < state.secondaryCurrencies.length; si++) {
+            var secLine = document.createElement('div');
+            secLine.textContent = formatAmount(entry.amount, state.secondaryCurrencies[si]);
+            secDiv.appendChild(secLine);
+          }
+          cell.appendChild(secDiv);
+        }
+        // Note
+        if (entry.note) {
+          var noteDiv = document.createElement('div');
+          noteDiv.className = 'day-note';
+          noteDiv.textContent = entry.note;
+          cell.appendChild(noteDiv);
+        }
+      }
+    }
+
+    // Click to open modal (only in non-all mode)
+    if (!isAll) {
+      (function(dateStr) {
+        cell.addEventListener('click', function() { openModal(dateStr); });
+      })(key);
+    }
+
+    grid.appendChild(cell);
+  }
+
+  updateSummary();
+}
+
+/* ══════════════════════════════════════
+   SUMMARY
+══════════════════════════════════════ */
+function updateSummary() {
+  var entries = getEntries();
+  var y = state.viewYear;
+  var m = state.viewMonth;
+  var prefix = y + '-' + String(m + 1).padStart(2, '0') + '-';
+
+  var monthAmounts = [];
+  var keys = Object.keys(entries);
+  for (var i = 0; i < keys.length; i++) {
+    if (keys[i].indexOf(prefix) === 0) monthAmounts.push(entries[keys[i]].amount);
+  }
+
+  var total = monthAmounts.reduce(function(a, b) { return a + b; }, 0);
+  var best  = monthAmounts.length ? Math.max.apply(null, monthAmounts) : null;
+  var worst = monthAmounts.length ? Math.min.apply(null, monthAmounts) : null;
+  var wins  = monthAmounts.filter(function(a) { return a > 0; }).length;
+  var n     = monthAmounts.length;
+
+  var totalEl = el('s-total');
+  totalEl.textContent = n ? formatAmount(total, state.primaryCurrency) : '$0';
+  totalEl.className   = 'stat-val ' + (total > 0 ? 'pos' : total < 0 ? 'neg' : 'neu');
+
+  el('s-best').textContent  = best  !== null ? formatAmount(best,  state.primaryCurrency) : '—';
+  el('s-worst').textContent = worst !== null ? formatAmount(worst, state.primaryCurrency) : '—';
+  el('s-wins').textContent  = n ? (wins + ' / ' + n) : '—';
+
+  function secFmt(val) {
+    if (val === null || !state.secondaryCurrencies.length) return '';
+    return state.secondaryCurrencies.map(function(c) { return formatAmount(val, c); }).join(' · ');
+  }
+
+  el('s-total-sec').textContent = n ? secFmt(total) : '';
+  el('s-best-sec').textContent  = secFmt(best);
+  el('s-worst-sec').textContent = secFmt(worst);
+  el('s-wins-sec').textContent  = n ? (Math.round((wins / n) * 100) + '% win rate') : '';
+
+  // All-time: sum for active profile only (or all profiles in all-accounts view)
+  var allTotal = 0;
+  if (state.activeProfileId === 'all') {
+    var profiles = getProfiles();
+    for (var pi = 0; pi < profiles.length; pi++) {
+      var profEntries = profiles[pi].entries || {};
+      var profVals = Object.values(profEntries);
+      for (var vi = 0; vi < profVals.length; vi++) allTotal += profVals[vi].amount;
+    }
+  } else {
+    var activeProf = getActiveProfile();
+    if (activeProf) {
+      var activeEntries = activeProf.entries || {};
+      var activeVals = Object.values(activeEntries);
+      for (var ai = 0; ai < activeVals.length; ai++) allTotal += activeVals[ai].amount;
+    }
+  }
+  var allEl = el('s-alltime');
+  allEl.textContent = formatAmount(allTotal, state.primaryCurrency);
+  allEl.className   = 'stat-val ' + (allTotal > 0 ? 'pos' : allTotal < 0 ? 'neg' : 'neu');
+  el('s-alltime-sec').textContent = secFmt(allTotal);
+}
+
+/* ══════════════════════════════════════
+   MODAL
+══════════════════════════════════════ */
+function openModal(dateStr) {
+  if (state.activeProfileId === 'all') return;
+  state.modalDate = dateStr;
+  var prof  = getActiveProfile();
+  var entry = prof && prof.entries ? prof.entries[dateStr] : null;
+  var parts = dateStr.split('-').map(Number);
+  el('modal-date-badge').textContent =
+    new Date(parts[0], parts[1] - 1, parts[2]).toLocaleDateString('en-US',
+      { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' });
+
+  if (entry) {
+    state.modalSign = entry.amount >= 0 ? 1 : -1;
+    var primaryVal = usdToPrimary(Math.abs(entry.amount));
+    var cur = getCurrency(state.primaryCurrency);
+    var isWhole = cur.code === 'JPY' || cur.code === 'KRW';
+    el('modal-amount').value = isWhole ? Math.round(primaryVal) : parseFloat(primaryVal.toFixed(2));
+    el('modal-note').value   = entry.note || '';
+    el('btn-delete').style.display = '';
+  } else {
+    state.modalSign = 1;
+    el('modal-amount').value = '';
+    el('modal-note').value   = '';
+    el('btn-delete').style.display = 'none';
+  }
+
+  setSign(state.modalSign);
+  updateModalSecondary();
+  el('modal-overlay').classList.add('open');
+  setTimeout(function() { el('modal-amount').focus(); }, 150);
+}
+
+function closeModal() {
+  el('modal-overlay').classList.remove('open');
+  state.modalDate = null;
+}
+
+function setSign(sign) {
+  state.modalSign = sign;
+  el('btn-pos').className = 'sign-btn' + (sign === 1  ? ' active-pos' : '');
+  el('btn-neg').className = 'sign-btn' + (sign === -1 ? ' active-neg' : '');
+}
+
+function updateModalSecondary() {
+  var raw      = parseFloat(el('modal-amount').value) || 0;
+  var usdValue = primaryToUSD(raw) * state.modalSign;
+  var preview  = el('modal-secondary-preview');
+  if (!state.secondaryCurrencies.length || raw === 0) { preview.style.display = 'none'; return; }
+  preview.style.display = '';
+  el('modal-secondary-list').innerHTML = state.secondaryCurrencies.map(function(code) {
+    var cur = getCurrency(code);
+    return '<div class="modal-secondary-item"><span>' + cur.flag + ' ' + code + '</span><span>' + formatAmount(usdValue, code) + '</span></div>';
+  }).join('');
+}
+
+function saveEntry() {
+  if (state.activeProfileId === 'all') return;
+  var raw = parseFloat(el('modal-amount').value);
+  if (isNaN(raw) || raw < 0) {
+    var inp = el('modal-amount');
+    inp.style.borderColor = 'var(--red)';
+    setTimeout(function() { inp.style.borderColor = ''; }, 1200);
+    return;
+  }
+  var usdAmount = primaryToUSD(raw) * state.modalSign;
+  var prof = getActiveProfile();
+  if (!prof) return;
+  if (!prof.entries) prof.entries = {};
+  prof.entries[state.modalDate] = { amount: usdAmount, note: el('modal-note').value.trim() };
+  persist();
+  closeModal();
+  renderCalendar();
+}
+
+function deleteEntry() {
+  if (!state.modalDate || state.activeProfileId === 'all') return;
+  var prof = getActiveProfile();
+  if (prof && prof.entries) delete prof.entries[state.modalDate];
+  persist();
+  closeModal();
+  renderCalendar();
+}
+
+/* ══════════════════════════════════════
+   CURRENCY UI
+══════════════════════════════════════ */
+function buildCurrencyUI() {
+  buildPrimaryList();
+  buildSecondaryPanel();
+  buildSecondaryPills();
+  updatePrimaryButton();
+}
+
+function updatePrimaryButton() {
+  var cur = getCurrency(state.primaryCurrency);
+  el('main-currency-flag').textContent = cur.flag;
+  el('main-currency-code').textContent = cur.code;
+  el('modal-prefix').textContent       = cur.symbol;
+  el('modal-amount-label').textContent = 'Amount (' + cur.code + ')';
+  var isWhole = cur.code === 'JPY' || cur.code === 'KRW';
+  el('modal-amount').step        = isWhole ? '1' : '0.01';
+  el('modal-amount').placeholder = isWhole ? '0'  : '0.00';
+  el('secondary-panel-title').textContent = 'Select currencies to display alongside ' + cur.code;
+}
+
+function buildPrimaryList() {
+  el('primary-currency-list').innerHTML = CURRENCIES.map(function(cur) {
+    var active = cur.code === state.primaryCurrency ? 'active' : '';
+    return '<div class="currency-option ' + active + '" data-code="' + cur.code + '">'
+      + '<div class="currency-option-left">'
+      + '<span class="currency-flag">' + cur.flag + '</span>'
+      + '<div><div class="currency-code">' + cur.code + '</div>'
+      + '<div class="currency-name">' + cur.name + '</div></div>'
+      + '</div><span class="currency-check">✓</span></div>';
+  }).join('');
+  document.querySelectorAll('.currency-option').forEach(function(opt) {
+    opt.addEventListener('click', function() { selectPrimary(opt.dataset.code); });
+  });
+}
+
+function selectPrimary(code) {
+  state.secondaryCurrencies = state.secondaryCurrencies.filter(function(c) { return c !== code; });
+  state.primaryCurrency = code;
+  persist();
+  el('currency-dropdown').classList.remove('open');
+  buildCurrencyUI();
+  renderCalendar();
+}
+
+function buildSecondaryPanel() {
+  var available = CURRENCIES.filter(function(c) { return c.code !== state.primaryCurrency; });
+  el('secondary-panel-grid').innerHTML = available.map(function(cur) {
+    var active = state.secondaryCurrencies.indexOf(cur.code) >= 0 ? 'active' : '';
+    return '<div class="secondary-toggle-item ' + active + '" data-code="' + cur.code + '">'
+      + '<span>' + cur.flag + '</span>'
+      + '<span class="currency-code">' + cur.code + '</span>'
+      + '<span style="font-size:11px;color:var(--text3);flex:1">' + cur.name + '</span>'
+      + '<span class="sti-check">✓</span></div>';
+  }).join('');
+  document.querySelectorAll('.secondary-toggle-item').forEach(function(item) {
+    item.addEventListener('click', function() { toggleSecondary(item.dataset.code); });
+  });
+}
+
+function toggleSecondary(code) {
+  var idx = state.secondaryCurrencies.indexOf(code);
+  if (idx >= 0) {
+    state.secondaryCurrencies.splice(idx, 1);
+  } else {
+    if (state.secondaryCurrencies.length >= 4) state.secondaryCurrencies.shift();
+    state.secondaryCurrencies.push(code);
+  }
+  persist();
+  buildSecondaryPanel();
+  buildSecondaryPills();
+  renderCalendar();
+}
+
+function buildSecondaryPills() {
+  var hasSecs      = state.secondaryCurrencies.length > 0;
+  var collapseBtn  = el('btn-collapse-secondary');
+  var pillsRow     = el('secondary-pills');
+  var collapsedBar = el('secondary-collapsed-bar');
+  collapseBtn.style.display = hasSecs ? '' : 'none';
+
+  if (state.secondaryCollapsed && hasSecs) {
+    pillsRow.style.display     = 'none';
+    collapsedBar.style.display = 'flex';
+    collapsedBar.innerHTML = state.secondaryCurrencies.map(function(code) {
+      var cur = getCurrency(code);
+      return '<span style="font-size:12px;color:var(--text2);font-family:DM Mono,monospace;background:var(--bg3);border:1px solid var(--border);border-radius:999px;padding:3px 10px;">' + cur.flag + ' ' + cur.code + '</span>';
+    }).join('');
+    collapseBtn.textContent = 'Show ▼';
+  } else {
+    state.secondaryCollapsed   = false;
+    pillsRow.style.display     = '';
+    collapsedBar.style.display = 'none';
+    collapseBtn.textContent    = 'Hide ▲';
+
+    pillsRow.innerHTML = state.secondaryCurrencies.map(function(code) {
+      var cur = getCurrency(code);
+      return '<span class="sec-pill active" data-code="' + code + '">'
+        + '<span class="sec-pill-flag">' + cur.flag + '</span>' + cur.code
+        + '<span style="opacity:0.5;margin-left:2px">×</span></span>';
+    }).join('') + '<button class="add-currency-btn" id="btn-add-currency">+ Add currency</button>';
+
+    document.querySelectorAll('.sec-pill').forEach(function(pill) {
+      pill.addEventListener('click', function() { toggleSecondary(pill.dataset.code); });
+    });
+    var addCurBtn = el('btn-add-currency');
+    if (addCurBtn) addCurBtn.addEventListener('click', toggleSecondaryPanel);
+  }
+
+  collapseBtn.onclick = function() {
+    state.secondaryCollapsed = !state.secondaryCollapsed;
+    if (state.secondaryCollapsed) el('secondary-panel').classList.remove('visible');
+    buildSecondaryPills();
+  };
+}
+
+function toggleSecondaryPanel() {
+  el('secondary-panel').classList.toggle('visible');
+}
+
+/* ══════════════════════════════════════
+   FULLSCREEN
+══════════════════════════════════════ */
+function enterFullscreen() {
+  var section = el('calendar-section');
+  section.classList.add('fs-active');
+  updateFsMonthLabel();
+  if (section.requestFullscreen) section.requestFullscreen().catch(function() {});
+  else if (section.webkitRequestFullscreen) section.webkitRequestFullscreen();
+}
+
+function exitFullscreen() {
+  el('calendar-section').classList.remove('fs-active');
+  if (document.fullscreenElement) document.exitFullscreen().catch(function() {});
+  else if (document.webkitFullscreenElement) document.webkitExitFullscreen();
+}
+
+function toggleFullscreen() {
+  el('calendar-section').classList.contains('fs-active') ? exitFullscreen() : enterFullscreen();
+}
+
+function updateFsMonthLabel() {
+  var fsEl = el('month-label-fs');
+  if (fsEl) fsEl.textContent = el('month-label').textContent;
+}
+
+document.addEventListener('fullscreenchange', function() {
+  if (!document.fullscreenElement) el('calendar-section').classList.remove('fs-active');
+});
+document.addEventListener('webkitfullscreenchange', function() {
+  if (!document.webkitFullscreenElement) el('calendar-section').classList.remove('fs-active');
+});
+
+/* ══════════════════════════════════════
+   EVENT WIRING
+══════════════════════════════════════ */
+function wireEvents() {
+  el('btn-login').addEventListener('click', doLogin);
+  el('btn-register').addEventListener('click', doRegister);
+  el('link-to-register').addEventListener('click', showRegister);
+  el('link-to-login').addEventListener('click', showLogin);
+  el('btn-logout').addEventListener('click', doLogout);
+  el('theme-toggle').addEventListener('click', toggleTheme);
+  el('btn-prev').addEventListener('click', function() { changeMonth(-1); });
+  el('btn-next').addEventListener('click', function() { changeMonth(1);  });
+  el('currency-btn').addEventListener('click', function() {
+    el('currency-dropdown').classList.toggle('open');
+  });
+  el('btn-pos').addEventListener('click', function() { setSign(1);  });
+  el('btn-neg').addEventListener('click', function() { setSign(-1); });
+  el('modal-amount').addEventListener('input', updateModalSecondary);
+  el('btn-save').addEventListener('click', saveEntry);
+  el('btn-cancel-modal').addEventListener('click', closeModal);
+  el('btn-delete').addEventListener('click', deleteEntry);
+  el('btn-fullscreen').addEventListener('click', toggleFullscreen);
+  el('btn-fullscreen-fs').addEventListener('click', exitFullscreen);
+  el('btn-prev-fs').addEventListener('click', function() { changeMonth(-1); });
+  el('btn-next-fs').addEventListener('click', function() { changeMonth(1);  });
+
+  el('modal-overlay').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
+  document.addEventListener('click', function(e) {
+    var wrap = document.querySelector('.currency-wrap');
+    var dd   = el('currency-dropdown');
+    if (wrap && dd && !wrap.contains(e.target)) dd.classList.remove('open');
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeModal();
+    if (e.key === 'Enter' && el('modal-overlay').classList.contains('open') && e.ctrlKey) saveEntry();
+    if (e.key === 'Enter' && !el('modal-overlay').classList.contains('open')) {
+      if (el('auth-login').style.display !== 'none' && !state.currentUser) doLogin();
+      else if (el('auth-register').style.display !== 'none' && !state.currentUser) doRegister();
+    }
+    if (state.currentUser && !el('modal-overlay').classList.contains('open')) {
+      if (e.key === 'ArrowLeft')  { e.preventDefault(); changeMonth(-1); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); changeMonth(1);  }
+    }
+  });
+
+  el('login-password').addEventListener('keydown', function(e) { if (e.key === 'Enter') doLogin();    });
+  el('reg-password').addEventListener('keydown',   function(e) { if (e.key === 'Enter') doRegister(); });
+}
+
+/* ══════════════════════════════════════
+   BOOT
+══════════════════════════════════════ */
+(function init() {
+  loadPersisted();
+  applyTheme();
+  wireEvents();
+  if (state.currentUser) {
+    enterApp();
+  } else {
+    el('auth-screen').style.display = '';
+    el('main-screen').style.display = 'none';
+    showLogin();
+  }
+})();
+</script>
+</body>
+</html>
